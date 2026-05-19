@@ -1,0 +1,23 @@
+[1.300s] Invoking command in '/home/zehra/Masaüstü/tulpar_ika_ws/src/tulpar_description': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/lib/python3.12/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(stl_env) /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/tulpar_description build --build-base /home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/build install --record /home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/install.log --single-version-externally-managed install_data
+[1.711s] running egg_info
+[1.737s] writing ../../build/tulpar_description/tulpar_description.egg-info/PKG-INFO
+[1.738s] writing dependency_links to ../../build/tulpar_description/tulpar_description.egg-info/dependency_links.txt
+[1.738s] deleting ../../build/tulpar_description/tulpar_description.egg-info/entry_points.txt
+[1.738s] writing requirements to ../../build/tulpar_description/tulpar_description.egg-info/requires.txt
+[1.738s] writing top-level names to ../../build/tulpar_description/tulpar_description.egg-info/top_level.txt
+[1.786s] reading manifest file '../../build/tulpar_description/tulpar_description.egg-info/SOURCES.txt'
+[1.787s] writing manifest file '../../build/tulpar_description/tulpar_description.egg-info/SOURCES.txt'
+[1.788s] running build
+[1.788s] running build_py
+[1.788s] running install
+[1.796s] running install_lib
+[1.819s] creating /home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/lib/python3.12/site-packages/tulpar_description
+[1.820s] copying /home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/build/lib/tulpar_description/__init__.py -> /home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/lib/python3.12/site-packages/tulpar_description
+[1.820s] byte-compiling /home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/lib/python3.12/site-packages/tulpar_description/__init__.py to __init__.cpython-312.pyc
+[1.820s] running install_data
+[1.821s] copying urdf/robot.urdf.xacro -> /home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/share/tulpar_description/urdf
+[1.821s] running install_egg_info
+[1.847s] Copying ../../build/tulpar_description/tulpar_description.egg-info to /home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/lib/python3.12/site-packages/tulpar_description-0.0.0-py3.12.egg-info
+[1.849s] running install_scripts
+[2.017s] writing list of installed files to '/home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/install.log'
+[2.064s] Invoked command in '/home/zehra/Masaüstü/tulpar_ika_ws/src/tulpar_description' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/zehra/Masaüstü/tulpar_ika_ws/install/tulpar_description/lib/python3.12/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(stl_env) /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/tulpar_description build --build-base /home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/build install --record /home/zehra/Masaüstü/tulpar_ika_ws/build/tulpar_description/install.log --single-version-externally-managed install_data

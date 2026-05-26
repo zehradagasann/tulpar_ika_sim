@@ -1,54 +1,15 @@
 === E-02 COLLISION BOX DOGRULAMA ===
+URDF: robot.urdf.xacro
 
-URDF dosyasi: urdf/robot.urdf.xacro
-
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="1.2 0.6 0.24"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <!-- 62 kg, dikdörtgen kutu inertia -->
+       Tekerlek : Ø330 mm (r=0.165 m)
+       Max hız  : 0.785 m/s | Max tork: 21.6 Nm
+        <box size="1.316 1.207 0.615"/>
      <mass value="60.0"/>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
---
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
-    <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
---
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
-    <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
---
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
-    <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
---
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
-    <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
+      <mass value="0.18"/>
+      <geometry><box size="0.09 0.025 0.025"/></geometry>
+      <mass value="0.07"/>
+  <!-- Tekerlek sürtünme katsayıları -->

@@ -22,19 +22,21 @@
 
   <!-- ─── ŞASİ ─────────────────────────────────── -->
   <link name="base_link">
-    <visual>
+     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="1.2 0.6 0.24"/>
+        <mesh filename="package://tulpar_description/meshes/tulpar_yeni.stl"
+              scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminium">
         <color rgba="0.75 0.75 0.75 1"/>
       </material>
     </visual>
+   
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="1.2 0.6 0.24"/>
+        <box size="1.316 1.207 0.615"/>
       </geometry>
     </collision>
     <inertial>
@@ -53,65 +55,28 @@
     </inertial>
   </link>
 
-  <!-- ─── SOL ÖN TEKERLEK ──────────────────────── -->
+  <!-- Sol ön tekerlek - görünmez fizik linki -->
   <link name="wheel_fl">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-      <material name="dark">
-        <color rgba="0.1 0.1 0.1 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
-        iyy="0.024"  iyz="0"
-        izz="0.048"/>
+      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
     </inertial>
   </link>
-
   <joint name="joint_fl" type="continuous">
     <parent link="base_link"/>
     <child link="wheel_fl"/>
-    <!-- x: dingil/2=0.4, y: iz/2=0.52, z: tekerlek tabanı -->
     <origin xyz="0.4 0.58 -0.24" rpy="-1.5708 0 0"/>
     <axis xyz="0 0 1"/>
     <dynamics damping="0.1" friction="0.5"/>
   </joint>
 
-  <!-- ─── SOL ARKA TEKERLEK ─────────────────────── -->
+  <!-- Sol arka tekerlek -->
   <link name="wheel_rl">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-      <material name="dark">
-        <color rgba="0.1 0.1 0.1 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
-        iyy="0.024"  iyz="0"
-        izz="0.048"/>
+      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
     </inertial>
   </link>
-
   <joint name="joint_rl" type="continuous">
     <parent link="base_link"/>
     <child link="wheel_rl"/>
@@ -120,31 +85,13 @@
     <dynamics damping="0.1" friction="0.5"/>
   </joint>
 
-  <!-- ─── SAĞ ÖN TEKERLEK ──────────────────────── -->
+  <!-- Sağ ön tekerlek -->
   <link name="wheel_fr">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-      <material name="dark">
-        <color rgba="0.1 0.1 0.1 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
-        iyy="0.024"  iyz="0"
-        izz="0.048"/>
+      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
     </inertial>
   </link>
-
   <joint name="joint_fr" type="continuous">
     <parent link="base_link"/>
     <child link="wheel_fr"/>
@@ -153,31 +100,13 @@
     <dynamics damping="0.1" friction="0.5"/>
   </joint>
 
-  <!-- ─── SAĞ ARKA TEKERLEK ─────────────────────── -->
+  <!-- Sağ arka tekerlek -->
   <link name="wheel_rr">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-      <material name="dark">
-        <color rgba="0.1 0.1 0.1 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <cylinder radius="0.165" length="0.12"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="3.5"/>
-      <inertia
-        ixx="0.024"  ixy="0"  ixz="0"
-        iyy="0.024"  iyz="0"
-        izz="0.048"/>
+      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
     </inertial>
   </link>
-
   <joint name="joint_rr" type="continuous">
     <parent link="base_link"/>
     <child link="wheel_rr"/>

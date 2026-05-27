@@ -93,7 +93,7 @@
         </inertia>
       </inertial>
       <collision name='base_footprint_fixed_joint_lump__base_link_collision'>
-        <pose>0 0 0.3075 0 0 0</pose>
+        <pose>0 0 0.3575 0 0 0</pose>
         <geometry>
           <box>
             <size>1.3160000000000001 1.2070000000000001 0.61499999999999999</size>

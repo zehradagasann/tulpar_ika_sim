@@ -2,6 +2,25 @@
 <sdf version="1.8">
   <world name="s01_zemin_testi">
 
+    <physics name="default_physics" default="true" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>100</iters>
+          <sor>1.3</sor>
+        </solver>
+        <constraints>
+          <cfm>0</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
     <light name="sun" type="directional">
       <cast_shadows>true</cast_shadows>
       <pose>0 0 10 0 0 0</pose>
@@ -23,47 +42,363 @@
       </link>
     </model>
 
-    <!-- %45 DİK RAMPA — A çatısı: çıkış + tepe + iniş -->
-    <!-- Çıkış paneli: x=2.0 (zemin) → x=3.0 (tepe z=0.45m), açı=24.2° -->
-    <model name="rampa_45">
+    <!-- ═══ %45 RAMPA — Merdiven tasarımı ═══ -->
+    <!-- Çıkış: x=2.0→3.0m, 10 basamak×4.5cm = 45cm -->
+    <model name="rampa_asc_0">
       <static>true</static>
-      <pose>2.5 0 0.153 0 -0.423 0</pose>
+      <pose>2.050 0 0.0225 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>1.097 1.5 0.05</size></box></geometry>
+          <geometry><box><size>0.1000 1.5 0.0450</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>1.097 1.5 0.05</size></box></geometry>
+          <geometry><box><size>0.1000 1.5 0.0450</size></box></geometry>
           <material><ambient>0.8 0.4 0.1 1</ambient></material>
         </visual>
       </link>
     </model>
-
-    <!-- Tepe düzlüğü: fren (stop) noktası -->
-    <model name="rampa_tepe">
+    <model name="rampa_asc_1">
       <static>true</static>
-      <pose>3.0 0 0.377 0 0 0</pose>
+      <pose>2.150 0 0.0450 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>0.3 1.5 0.05</size></box></geometry>
+          <geometry><box><size>0.1000 1.5 0.0900</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>0.3 1.5 0.05</size></box></geometry>
+          <geometry><box><size>0.1000 1.5 0.0900</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_2">
+      <static>true</static>
+      <pose>2.250 0 0.0675 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.1350</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.1350</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_3">
+      <static>true</static>
+      <pose>2.350 0 0.0900 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.1800</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.1800</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_4">
+      <static>true</static>
+      <pose>2.450 0 0.1125 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.2250</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.2250</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_5">
+      <static>true</static>
+      <pose>2.550 0 0.1350 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.2700</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.2700</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_6">
+      <static>true</static>
+      <pose>2.650 0 0.1575 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.3150</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.3150</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_7">
+      <static>true</static>
+      <pose>2.750 0 0.1800 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.3600</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.3600</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_8">
+      <static>true</static>
+      <pose>2.850 0 0.2025 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.4050</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.4050</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_asc_9">
+      <static>true</static>
+      <pose>2.950 0 0.2250 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.4500</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.4500</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <!-- Tepe düzlüğü: araç burada durup fren testi yapar -->
+    <model name="rampa_tepe">
+      <static>true</static>
+      <pose>3.75 0 0.425 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1.5000 1.5 0.0500</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.5000 1.5 0.0500</size></box></geometry>
           <material><ambient>1.0 0.6 0.0 1</ambient></material>
         </visual>
       </link>
     </model>
-
-    <!-- İniş paneli: x=3.0 (tepe) → x=4.0 (zemin) -->
-    <model name="rampa_inis">
+    <!-- İniş: x=4.5→5.5m, 10 basamak azalan -->
+    <model name="rampa_desc_0">
       <static>true</static>
-      <pose>3.5 0 0.153 0 0.423 0</pose>
+      <pose>4.550 0 0.2250 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>1.097 1.5 0.05</size></box></geometry>
+          <geometry><box><size>0.1000 1.5 0.4500</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>1.097 1.5 0.05</size></box></geometry>
+          <geometry><box><size>0.1000 1.5 0.4500</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_1">
+      <static>true</static>
+      <pose>4.650 0 0.2025 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.4050</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.4050</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_2">
+      <static>true</static>
+      <pose>4.750 0 0.1800 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.3600</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.3600</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_3">
+      <static>true</static>
+      <pose>4.850 0 0.1575 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.3150</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.3150</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_4">
+      <static>true</static>
+      <pose>4.950 0 0.1350 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.2700</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.2700</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_5">
+      <static>true</static>
+      <pose>5.050 0 0.1125 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.2250</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.2250</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_6">
+      <static>true</static>
+      <pose>5.150 0 0.0900 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.1800</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.1800</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_7">
+      <static>true</static>
+      <pose>5.250 0 0.0675 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.1350</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.1350</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_8">
+      <static>true</static>
+      <pose>5.350 0 0.0450 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.0900</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.0900</size></box></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <model name="rampa_desc_9">
+      <static>true</static>
+      <pose>5.450 0 0.0225 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1000 1.5 0.0450</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1000 1.5 0.0450</size></box></geometry>
           <material><ambient>0.8 0.4 0.1 1</ambient></material>
         </visual>
       </link>
@@ -72,10 +407,14 @@
     <!-- %20 YAN EĞİMLİ PLATFORM -->
     <model name="yan_egim_20">
       <static>true</static>
-      <pose>7 0 0.1 0.197 0 0</pose>
+      <pose>9 0 -0.05 0.197 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>2.0 1.5 0.1</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
           <geometry><box><size>2.0 1.5 0.1</size></box></geometry>
@@ -87,10 +426,14 @@
     <!-- 15 CM DİK BLOK -->
     <model name="blok_15cm">
       <static>true</static>
-      <pose>11 0 0.075 0 0 0</pose>
+      <pose>12 0 0.075 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>0.5 1.5 0.15</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
           <geometry><box><size>0.5 1.5 0.15</size></box></geometry>
@@ -106,6 +449,10 @@
       <link name="link">
         <collision name="collision">
           <geometry><box><size>0.3 1.5 0.05</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
           <geometry><box><size>0.3 1.5 0.05</size></box></geometry>
@@ -120,6 +467,10 @@
       <link name="link">
         <collision name="collision">
           <geometry><box><size>0.3 1.5 0.05</size></box></geometry>
+          <surface>
+            <contact><ode><kp>1000000</kp><kd>1</kd></ode></contact>
+            <friction><ode><mu>2.0</mu><mu2>2.0</mu2></ode></friction>
+          </surface>
         </collision>
         <visual name="visual">
           <geometry><box><size>0.3 1.5 0.05</size></box></geometry>
@@ -144,10 +495,10 @@
         </inertia>
       </inertial>
       <collision name='base_footprint_fixed_joint_lump__base_link_collision'>
-        <pose>0 0 0.3075 0 0 0</pose>
+        <pose>0 0 0.3575 0 0 0</pose>
         <geometry>
           <box>
-            <size>1.3160000000000001 1.2070000000000001 0.61499999999999999</size>
+            <size>0.85 1.207 0.615</size>
           </box>
         </geometry>
       </collision>
@@ -462,7 +813,7 @@
       <wheel_radius>0.165</wheel_radius>
       <max_linear_velocity>0.785</max_linear_velocity>
       <max_angular_velocity>7.854</max_angular_velocity>
-      <max_wheel_torque>21.6</max_wheel_torque>
+      <max_wheel_torque>50.0</max_wheel_torque>
       <max_linear_acceleration>5.0</max_linear_acceleration>
       <topic>/cmd_vel</topic>
       <odom_topic>/odom</odom_topic>

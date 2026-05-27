@@ -75,6 +75,7 @@ def main():
     son_log = 0
     # Rampa fren testi durumu
     fren_bekleniyor = False
+    fren_yapildi = False
     fren_baslangic = None
     fren_x_baslangic = None
     FREN_X = 2.7   # rampa üzerinde dur noktası (çıkışın ortası)
@@ -87,13 +88,13 @@ def main():
         node.veriler.append((t_gecen, x, z, roll, pitch))
 
         # Bölge takibi
-        if 2.0 <= x <= 5.0:
+        if 2.0 <= x <= 5.5:
             rapor['rampa']['max_pitch'] = max(rapor['rampa']['max_pitch'], abs(pitch))
-        if 6.0 <= x <= 10.0:
+        if 8.0 <= x <= 11.0:
             rapor['yan_egim']['max_roll'] = max(rapor['yan_egim']['max_roll'], abs(roll))
-        if 10.5 <= x <= 12.0:
+        if 11.5 <= x <= 13.5:
             rapor['blok']['max_z'] = max(rapor['blok']['max_z'], z)
-        if 13.5 <= x <= 16.0:
+        if 13.5 <= x <= 16.5:
             rapor['tumsek']['max_z'] = max(rapor['tumsek']['max_z'], z)
 
         # Her 1 saniyede log
@@ -111,13 +112,13 @@ def main():
             node.get_logger().info('Parkur tamamlandı!')
             break
 
-        # 150 saniye timeout
-        if t_gecen > 150:
+        # 200 saniye timeout
+        if t_gecen > 200:
             node.get_logger().warn(f'Timeout — x={x:.2f}m de kaldı')
             break
 
         # --- RAMPA FREN TESTİ ---
-        if not fren_bekleniyor and x >= FREN_X and x <= 3.2:
+        if not fren_bekleniyor and not fren_yapildi and x >= FREN_X and x <= 3.2:
             # Rampa ortasına geldi — dur ve fren testi yap
             node.cmd_pub.publish(Twist())
             fren_bekleniyor = True
@@ -139,6 +140,7 @@ def main():
                     f'→ {"TUTTU ✓" if kayma < 0.05 else "KAYDI ✗"}'
                 )
                 fren_bekleniyor = False
+                fren_yapildi = True
             else:
                 node.get_logger().info(f'  Fren bekliyor {sure_gecti:.1f}/{FREN_SURE:.1f}s — kayma={kayma:.4f}m')
                 rclpy.spin_once(node, timeout_sec=0.1)
@@ -146,7 +148,7 @@ def main():
 
         # Hareket komutu
         msg = Twist()
-        msg.linear.x = 0.5
+        msg.linear.x = 0.7
         node.cmd_pub.publish(msg)
         rclpy.spin_once(node, timeout_sec=0.05)
 
@@ -155,10 +157,10 @@ def main():
 
     # Sonuç raporu
     son_x = node.veriler[-1][1] if node.veriler else 0
-    rapor['rampa']['gecti'] = son_x > 5.0
-    rapor['yan_egim']['gecti'] = son_x > 10.0
-    rapor['blok']['gecti'] = son_x > 12.0
-    rapor['tumsek']['gecti'] = son_x > 16.0
+    rapor['rampa']['gecti'] = son_x > 5.5
+    rapor['yan_egim']['gecti'] = son_x > 11.0
+    rapor['blok']['gecti'] = son_x > 13.0
+    rapor['tumsek']['gecti'] = son_x > 16.5
 
     print('\n' + '='*50)
     print('S-01 TAM PARKUR TEST RAPORU')

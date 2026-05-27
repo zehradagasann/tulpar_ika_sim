@@ -1,16 +1,23 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 import xacro
 
 def generate_launch_description():
-    package_name = "tulpar_description"
-    pkg_path = get_package_share_directory(package_name)
+    pkg_path = get_package_share_directory("tulpar_description")
     xacro_file = os.path.join(pkg_path, "urdf", "robot.urdf.xacro")
     robot_desc = xacro.process_file(xacro_file).toxml()
+
+    world_arg = DeclareLaunchArgument(
+        'world',
+        default_value='/home/talha/tulpar_ika_sim/worlds/s01_robotlu_world.sdf',
+        description='Gazebo world SDF path'
+    )
+    world = LaunchConfiguration('world')
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
@@ -26,33 +33,22 @@ def generate_launch_description():
                 "launch", "gz_sim.launch.py"
             )
         ]),
-       launch_arguments={"gz_args": "-r --render-engine ogre empty.sdf"}.items()
-    )
-
-    spawn = Node(
-        package="ros_gz_sim",
-        executable="create",
-        arguments=[
-            "-name", "tulpar",
-            "-topic", "robot_description",
-            "-x", "0", "-y", "0", "-z", "1.0"
-        ],
-        output="screen"
+        launch_arguments={
+            "gz_args": ["-r --render-engine ogre ", world]
+        }.items()
     )
 
     bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
         arguments=[
-            "/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist",
-            "/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry",
+            "/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist",
+            "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
+            "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
+            "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/camera/depth@sensor_msgs/msg/Image[gz.msgs.Image",
         ],
         output="screen"
     )
 
-    return LaunchDescription([
-        robot_state_publisher,
-        gazebo,
-        spawn,
-        bridge
-    ])
+    return LaunchDescription([world_arg, robot_state_publisher, gazebo, bridge])

@@ -2,28 +2,26 @@
 <robot name="tulpar_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- ═══════════════════════════════════════════════
-       TULPAR İKA — URDF v2.0
+       TULPAR İKA — URDF v2.1 (geometri duzeltildi)
        Şasi     : 1200 x 600 x 240 mm, 62 kg
        Tekerlek : Ø330 mm (r=0.165 m)
        İz gen.  : 1040 mm
        Dingil   : 800 mm
-       Max hız  : 0.785 m/s | Max tork: 21.6 Nm
        ═══════════════════════════════════════════════ -->
 
-  <!-- Zemin referans noktası -->
   <link name="base_footprint"/>
 
+  <!-- base_link tekerlek ekseni hizasinda (z=0.165) -->
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link"/>
-    <!-- Ağırlık merkezi yüksekliği ~240mm -->
-    <origin xyz="0 0 0.24" rpy="0 0 0"/>
+    <origin xyz="0 0 0.165" rpy="0 0 0"/>
   </joint>
 
   <!-- ─── ŞASİ ─────────────────────────────────── -->
   <link name="base_link">
-     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+    <visual>
+      <origin xyz="0.600 -0.300 0.110" rpy="0 0 1.5708"/>
       <geometry>
         <mesh filename="package://tulpar_description/meshes/tulpar_yeni.stl"
               scale="0.001 0.001 0.001"/>
@@ -32,159 +30,123 @@
         <color rgba="0.75 0.75 0.75 1"/>
       </material>
     </visual>
-   
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0.1425" rpy="0 0 0"/>
       <geometry>
         <box size="1.316 1.207 0.615"/>
       </geometry>
     </collision>
     <inertial>
-      <!-- 62 kg, dikdörtgen kutu inertia -->
-     <mass value="60.0"/>
+      <mass value="60.0"/>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <inertia
-        ixx="2.100"  ixy="0.0"  ixz="0.0"
-        iyy="7.920"  iyz="0.0"
-        izz="9.300"/>
-      <!--
-        ixx = 60/12*(0.24²+0.6²)  = 2.100
-        iyy = 60/12*(1.2²+0.6²)   = 7.920
-        izz = 60/12*(1.2²+0.24²)  = 9.300
-      -->
+        ixx="8.520"   ixy="0.0"  ixz="0.0"
+        iyy="22.140"  iyz="0.0"
+        izz="27.180"/>
     </inertial>
   </link>
 
-  <!-- Sol ön tekerlek - görünmez fizik linki -->
-  <link name="wheel_fl">
-    <inertial>
-      <mass value="3.5"/>
-      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
-    </inertial>
-  </link>
-  <joint name="joint_fl" type="continuous">
-    <parent link="base_link"/>
-    <child link="wheel_fl"/>
-    <origin xyz="0.4 0.58 -0.24" rpy="-1.5708 0 0"/>
-    <axis xyz="0 0 1"/>
-    <dynamics damping="0.1" friction="0.5"/>
-  </joint>
+  <!-- ─── TEKERLEKLER (collision eklendi) ──────── -->
+  <xacro:macro name="tekerlek" params="isim x y">
+    <link name="${isim}">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.165" length="0.12"/>
+        </geometry>
+        <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.165" length="0.12"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="3.5"/>
+        <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
+      </inertial>
+    </link>
+    <joint name="joint_${isim}" type="continuous">
+      <parent link="base_link"/>
+      <child link="${isim}"/>
+      <!-- z=0: tekerlek merkezi base_link ile ayni hizada (zeminden 0.165m) -->
+      <origin xyz="${x} ${y} 0" rpy="-1.5708 0 0"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.1" friction="0.5"/>
+    </joint>
+  </xacro:macro>
 
-  <!-- Sol arka tekerlek -->
-  <link name="wheel_rl">
-    <inertial>
-      <mass value="3.5"/>
-      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
-    </inertial>
-  </link>
-  <joint name="joint_rl" type="continuous">
-    <parent link="base_link"/>
-    <child link="wheel_rl"/>
-    <origin xyz="-0.4 0.58 -0.24" rpy="-1.5708 0 0"/>
-    <axis xyz="0 0 1"/>
-    <dynamics damping="0.1" friction="0.5"/>
-  </joint>
+  <xacro:tekerlek isim="wheel_fl" x="0.4"  y="0.52"/>
+  <xacro:tekerlek isim="wheel_rl" x="-0.4" y="0.52"/>
+  <xacro:tekerlek isim="wheel_fr" x="0.4"  y="-0.52"/>
+  <xacro:tekerlek isim="wheel_rr" x="-0.4" y="-0.52"/>
 
-  <!-- Sağ ön tekerlek -->
-  <link name="wheel_fr">
-    <inertial>
-      <mass value="3.5"/>
-      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
-    </inertial>
-  </link>
-  <joint name="joint_fr" type="continuous">
-    <parent link="base_link"/>
-    <child link="wheel_fr"/>
-    <origin xyz="0.4 -0.58 -0.24" rpy="-1.5708 0 0"/>
-    <axis xyz="0 0 1"/>
-    <dynamics damping="0.1" friction="0.5"/>
-  </joint>
-
-  <!-- Sağ arka tekerlek -->
-  <link name="wheel_rr">
-    <inertial>
-      <mass value="3.5"/>
-      <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
-    </inertial>
-  </link>
-  <joint name="joint_rr" type="continuous">
-    <parent link="base_link"/>
-    <child link="wheel_rr"/>
-    <origin xyz="-0.4 -0.58 -0.24" rpy="-1.5708 0 0"/>
-    <axis xyz="0 0 1"/>
-    <dynamics damping="0.1" friction="0.5"/>
-  </joint>
-
-  <!-- ─── LİDAR (RPLIDAR S2) ───────────────────── -->
+  <!-- ─── LİDAR ─────────────────────────────────── -->
   <link name="lidar_link">
     <visual>
       <geometry><cylinder radius="0.04" length="0.04"/></geometry>
-      <material name="black"><color rgba="0 0 0 1"/></material>
+      <material name="lidar_black"><color rgba="0 0 0 1"/></material>
     </visual>
     <inertial>
       <mass value="0.18"/>
       <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
     </inertial>
   </link>
-
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="lidar_link"/>
-    <!-- Şasi üstü ortasına monte -->
-    <origin xyz="0.3 0 0.14" rpy="0 0 0"/>
+    <origin xyz="0.3 0 0.4" rpy="0 0 0"/>
   </joint>
 
   <!-- ─── REALSENSE D455 ────────────────────────── -->
   <link name="camera_link">
     <visual>
       <geometry><box size="0.09 0.025 0.025"/></geometry>
-      <material name="blue"><color rgba="0.0 0.2 0.8 1"/></material>
+      <material name="cam_blue"><color rgba="0.0 0.2 0.8 1"/></material>
     </visual>
     <inertial>
       <mass value="0.07"/>
       <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
     </inertial>
   </link>
-
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="camera_link"/>
-    <!-- Ön yüze monte -->
-    <origin xyz="0.62 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0.62 0 0.2" rpy="0 0 0"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════
        GAZEBO PLUGIN'LERİ
        ═══════════════════════════════════════════════ -->
+  <gazebo>
+    <plugin filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+    </plugin>
+  </gazebo>
 
-  <!-- Diff Drive (Skid Steer) -->
   <gazebo>
     <plugin filename="gz-sim-diff-drive-system"
             name="gz::sim::systems::DiffDrive">
-      <!-- Sol tekerlekler -->
-      <left_joint>joint_fl</left_joint>
-      <left_joint>joint_rl</left_joint>
-      <!-- Sağ tekerlekler -->
-      <right_joint>joint_fr</right_joint>
-      <right_joint>joint_rr</right_joint>
-
-      <!-- Elektrik ekibi hesapları -->
+      <left_joint>joint_wheel_fl</left_joint>
+      <left_joint>joint_wheel_rl</left_joint>
+      <right_joint>joint_wheel_fr</right_joint>
+      <right_joint>joint_wheel_rr</right_joint>
       <wheel_separation>1.04</wheel_separation>
       <wheel_radius>0.165</wheel_radius>
       <max_linear_velocity>0.785</max_linear_velocity>
       <max_angular_velocity>7.854</max_angular_velocity>
       <max_wheel_torque>21.6</max_wheel_torque>
       <max_linear_acceleration>5.0</max_linear_acceleration>
-
-      <topic>cmd_vel</topic>
-      <odom_topic>odom</odom_topic>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
       <frame_id>odom</frame_id>
       <child_frame_id>base_footprint</child_frame_id>
       <odom_publish_frequency>50</odom_publish_frequency>
     </plugin>
   </gazebo>
 
-  <!-- LiDAR (RPLIDAR S2) -->
   <gazebo reference="lidar_link">
     <sensor name="rplidar_s2" type="gpu_lidar">
       <update_rate>10</update_rate>
@@ -204,16 +166,10 @@
           <max>30.0</max>
           <resolution>0.03</resolution>
         </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.03</stddev>
-        </noise>
       </lidar>
     </sensor>
   </gazebo>
 
-  <!-- RealSense D455 Derinlik Kamerası -->
   <gazebo reference="camera_link">
     <sensor name="realsense_d455" type="depth_camera">
       <update_rate>30</update_rate>
@@ -230,30 +186,24 @@
           <near>0.4</near>
           <far>6.0</far>
         </clip>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.005</stddev>
-        </noise>
       </camera>
     </sensor>
   </gazebo>
 
-  <!-- Tekerlek sürtünme katsayıları -->
   <gazebo reference="wheel_fl">
-    <mu1>0.8</mu1><mu2>0.8</mu2>
+    <mu1>1.0</mu1><mu2>1.0</mu2>
     <kp>1000000.0</kp><kd>1.0</kd>
   </gazebo>
   <gazebo reference="wheel_rl">
-    <mu1>0.8</mu1><mu2>0.8</mu2>
+    <mu1>1.0</mu1><mu2>1.0</mu2>
     <kp>1000000.0</kp><kd>1.0</kd>
   </gazebo>
   <gazebo reference="wheel_fr">
-    <mu1>0.8</mu1><mu2>0.8</mu2>
+    <mu1>1.0</mu1><mu2>1.0</mu2>
     <kp>1000000.0</kp><kd>1.0</kd>
   </gazebo>
   <gazebo reference="wheel_rr">
-    <mu1>0.8</mu1><mu2>0.8</mu2>
+    <mu1>1.0</mu1><mu2>1.0</mu2>
     <kp>1000000.0</kp><kd>1.0</kd>
   </gazebo>
 

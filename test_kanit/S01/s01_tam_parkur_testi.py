@@ -78,7 +78,7 @@ def main():
     fren_yapildi = False
     fren_baslangic = None
     fren_x_baslangic = None
-    FREN_X = 3.5   # rampa tepesinde dur noktası (düz platformda)
+    FREN_X = 4.5   # rampa tepesinde dur noktası (düz platform: x=4.0→5.5)
     FREN_SURE = 2.0
 
     while rclpy.ok():
@@ -88,13 +88,13 @@ def main():
         node.veriler.append((t_gecen, x, z, roll, pitch))
 
         # Bölge takibi
-        if 2.0 <= x <= 5.5:
+        if 2.0 <= x <= 7.5:
             rapor['rampa']['max_pitch'] = max(rapor['rampa']['max_pitch'], abs(pitch))
-        if 8.0 <= x <= 11.0:
+        if 10.0 <= x <= 13.0:
             rapor['yan_egim']['max_roll'] = max(rapor['yan_egim']['max_roll'], abs(roll))
-        if 11.5 <= x <= 13.5:
+        if 13.5 <= x <= 15.5:
             rapor['blok']['max_z'] = max(rapor['blok']['max_z'], z)
-        if 13.5 <= x <= 16.5:
+        if 15.5 <= x <= 18.5:
             rapor['tumsek']['max_z'] = max(rapor['tumsek']['max_z'], z)
 
         # Her 1 saniyede log
@@ -108,23 +108,23 @@ def main():
             break
 
         # Bitiş
-        if x >= 16.5:
+        if x >= 18.5:
             node.get_logger().info('Parkur tamamlandı!')
             break
 
-        # 200 saniye timeout
-        if t_gecen > 200:
-            node.get_logger().warn(f'Timeout — x={x:.2f}m de kaldı')
+        # 300 saniye timeout
+        if t_gecen > 300:
+            node.get_logger().warn(f'Timeout (300s) — x={x:.2f}m de kaldı')
             break
 
         # --- RAMPA FREN TESTİ ---
-        if not fren_bekleniyor and not fren_yapildi and x >= FREN_X and x <= 4.2:
+        if not fren_bekleniyor and not fren_yapildi and x >= FREN_X and x <= 5.3:
             # Rampa ortasına geldi — dur ve fren testi yap
             node.cmd_pub.publish(Twist())
             fren_bekleniyor = True
             fren_baslangic = time.time()
             fren_x_baslangic = x
-            node.get_logger().info(f'TEPE FREN TESTİ: x={x:.2f}m (düz platform) motor kesildi — 2 sn bekleniyor...')
+            node.get_logger().info(f'TEPE FREN TESTİ: x={x:.2f}m (düz platform x=4.0→5.5) motor kesildi — 2 sn bekleniyor...')
             rclpy.spin_once(node, timeout_sec=0.05)
             continue
 
@@ -157,10 +157,10 @@ def main():
 
     # Sonuç raporu
     son_x = node.veriler[-1][1] if node.veriler else 0
-    rapor['rampa']['gecti'] = son_x > 5.5
-    rapor['yan_egim']['gecti'] = son_x > 11.0
-    rapor['blok']['gecti'] = son_x > 13.0
-    rapor['tumsek']['gecti'] = son_x > 16.5
+    rapor['rampa']['gecti'] = son_x > 7.5
+    rapor['yan_egim']['gecti'] = son_x > 13.0
+    rapor['blok']['gecti'] = son_x > 15.0
+    rapor['tumsek']['gecti'] = son_x > 18.5
 
     print('\n' + '='*50)
     print('S-01 TAM PARKUR TEST RAPORU')
@@ -168,7 +168,7 @@ def main():
     print(f"Son konum: x={son_x:.2f}m")
     fren_k = rapor['rampa']['fren_kayma']
     fren_str = f"kayma={fren_k:.4f}m {'✓' if fren_k is not None and fren_k < 0.05 else '✗'}" if fren_k is not None else "test yapılmadı"
-    print(f"Rampa (%45):    {'✓ GEÇTİ' if rapor['rampa']['gecti'] else '✗ GEÇEMEDİ'}  max_pitch={rapor['rampa']['max_pitch']:.1f}°  fren={fren_str}")
+    print(f"Rampa (%45,20b):{'✓ GEÇTİ' if rapor['rampa']['gecti'] else '✗ GEÇEMEDİ'}  max_pitch={rapor['rampa']['max_pitch']:.1f}°  fren={fren_str}")
     print(f"Yan eğim (%20): {'✓ GEÇTİ' if rapor['yan_egim']['gecti'] else '✗ GEÇEMEDİ'}  max_roll={rapor['yan_egim']['max_roll']:.1f}°")
     print(f"15cm blok:      {'✓ GEÇTİ' if rapor['blok']['gecti'] else '✗ GEÇEMEDİ'}  max_z={rapor['blok']['max_z']:.3f}m")
     print(f"Tümsekler:      {'✓ GEÇTİ' if rapor['tumsek']['gecti'] else '✗ GEÇEMEDİ'}  max_z={rapor['tumsek']['max_z']:.3f}m")

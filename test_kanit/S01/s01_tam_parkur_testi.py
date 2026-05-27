@@ -78,7 +78,7 @@ def main():
     fren_yapildi = False
     fren_baslangic = None
     fren_x_baslangic = None
-    FREN_X = 2.7   # rampa üzerinde dur noktası (çıkışın ortası)
+    FREN_X = 3.5   # rampa tepesinde dur noktası (düz platformda)
     FREN_SURE = 2.0
 
     while rclpy.ok():
@@ -118,13 +118,13 @@ def main():
             break
 
         # --- RAMPA FREN TESTİ ---
-        if not fren_bekleniyor and not fren_yapildi and x >= FREN_X and x <= 3.2:
+        if not fren_bekleniyor and not fren_yapildi and x >= FREN_X and x <= 4.2:
             # Rampa ortasına geldi — dur ve fren testi yap
             node.cmd_pub.publish(Twist())
             fren_bekleniyor = True
             fren_baslangic = time.time()
             fren_x_baslangic = x
-            node.get_logger().info(f'RAMPA FREN TESTİ: x={x:.2f}m de motor kesildi — 2 sn bekleniyor...')
+            node.get_logger().info(f'TEPE FREN TESTİ: x={x:.2f}m (düz platform) motor kesildi — 2 sn bekleniyor...')
             rclpy.spin_once(node, timeout_sec=0.05)
             continue
 

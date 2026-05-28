@@ -32,16 +32,16 @@ class BlokTesti(Node):
         if z > self.max_z:
             self.max_z = z
 
-        if 10.0 <= x <= 13.0:
+        if 14.5 <= x <= 16.5:
             self.get_logger().info(f'Blok bölgesi: x={x:.2f}m, z={z:.3f}m')
 
-        if x >= 10.5 and not self.blok_gecildi and z > 0.05:
+        if x >= 15.0 and not self.blok_gecildi and z > 0.05:
             self.blok_gecildi = True
             self.get_logger().info(f'✓ BLOK AŞILDI: z={z:.3f}m (beklenen >0.05m)')
 
-        if x >= 13.0 and not self.bitti:
+        if x >= 16.5 and not self.bitti:
             self.bitti = True
-            self.get_logger().info(f'Blok testi tamamlandi! Max z: {self.max_z:.3f}m')
+            self.get_logger().info(f'Blok testi tamamlandı! Max z: {self.max_z:.3f}m')
             if self.max_z > 0.05:
                 self.get_logger().info('✓ BLOK GEÇİLDİ')
             else:

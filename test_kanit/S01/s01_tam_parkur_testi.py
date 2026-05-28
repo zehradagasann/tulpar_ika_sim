@@ -90,11 +90,11 @@ def main():
         # Bölge takibi
         if 2.0 <= x <= 7.5:
             rapor['rampa']['max_pitch'] = max(rapor['rampa']['max_pitch'], abs(pitch))
-        if 10.0 <= x <= 13.0:
+        if 9.0 <= x <= 13.5:
             rapor['yan_egim']['max_roll'] = max(rapor['yan_egim']['max_roll'], abs(roll))
-        if 13.5 <= x <= 15.5:
+        if 14.5 <= x <= 16.0:
             rapor['blok']['max_z'] = max(rapor['blok']['max_z'], z)
-        if 15.5 <= x <= 18.5:
+        if 16.8 <= x <= 21.5:
             rapor['tumsek']['max_z'] = max(rapor['tumsek']['max_z'], z)
 
         # Her 1 saniyede log
@@ -108,7 +108,7 @@ def main():
             break
 
         # Bitiş
-        if x >= 18.5:
+        if x >= 22.0:
             node.get_logger().info('Parkur tamamlandı!')
             break
 
@@ -148,7 +148,10 @@ def main():
 
         # Hareket komutu
         msg = Twist()
-        msg.linear.x = 0.7
+        if 13.5 <= x <= 16.5:
+            msg.linear.x = 1.0  # blok için momentum
+        else:
+            msg.linear.x = 0.7
         node.cmd_pub.publish(msg)
         rclpy.spin_once(node, timeout_sec=0.05)
 
@@ -158,9 +161,9 @@ def main():
     # Sonuç raporu
     son_x = node.veriler[-1][1] if node.veriler else 0
     rapor['rampa']['gecti'] = son_x > 7.5
-    rapor['yan_egim']['gecti'] = son_x > 13.0
-    rapor['blok']['gecti'] = son_x > 15.0
-    rapor['tumsek']['gecti'] = son_x > 18.5
+    rapor['yan_egim']['gecti'] = son_x > 13.5
+    rapor['blok']['gecti'] = son_x > 16.0
+    rapor['tumsek']['gecti'] = son_x > 21.5
 
     print('\n' + '='*50)
     print('S-01 TAM PARKUR TEST RAPORU')

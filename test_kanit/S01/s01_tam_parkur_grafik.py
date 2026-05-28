@@ -18,10 +18,10 @@ fig, axes = plt.subplots(3, 1, figsize=(12, 12))
 
 # Engel bölgesi renkleri
 bolge = [
-    (2.0,  5.0,  '#FF8C00', '%45 Rampa'),
-    (6.0,  10.0, '#1E90FF', '%20 Yan Eğim'),
-    (10.5, 12.0, '#DC143C', '15cm Blok'),
-    (13.5, 16.0, '#696969', '5cm Tümsekler'),
+    (2.0,  7.5,  '#FF8C00', 'Rampa (45cm, 20b)'),
+    (9.0,  13.5, '#1E90FF', '%20 Yan Eğim'),
+    (14.5, 16.0, '#DC143C', '15cm Blok'),
+    (16.8, 21.5, '#696969', '5cm Tümsekler'),
 ]
 
 for ax in axes:
@@ -47,8 +47,8 @@ axes[1].grid(True, alpha=0.3); axes[1].legend(fontsize=9)
 
 # 3. Pitch
 axes[2].plot(zaman, pitch, 'r-', linewidth=2, label='Pitch (°)')
-axes[2].axhline(y=24.5,  color='orange', linestyle='--', alpha=0.7, label='+24.5° (%45 rampa)')
-axes[2].axhline(y=-24.5, color='orange', linestyle='--', alpha=0.7)
+axes[2].axhline(y=12.7,  color='orange', linestyle='--', alpha=0.7, label='+12.7° (rampa eğimi)')
+axes[2].axhline(y=-12.7, color='orange', linestyle='--', alpha=0.7)
 axes[2].axhline(y=0,     color='k', linestyle='-', alpha=0.2)
 axes[2].set_xlabel('Zaman (s)', fontsize=10)
 axes[2].set_ylabel('Pitch (°)', fontsize=10)

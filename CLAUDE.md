@@ -88,7 +88,26 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 - **Talha'nın görev alanları**: BT (Behavior Tree) mimarisi, Nav2 entegrasyonu, yer istasyonu (Electron + React + rclnodejs), EKF / sensör füzyonu, Watchdog/Failsafe, ELRS RC override, ağ altyapısı (Bullet M5)
 - **Git kuralı**: Her zaman `talha_gelistirme` branch'inde çalış; `main` ve `yazilim_gelistirme`'ye direkt commit atma. Gün sonunda commit + push + PR'ı hatırlat.
 - **Test kodları ↔ parkur eşleşmesi**: S-01 (arazi), S-02 (hedef tespit), S-03 (su geçişi), S-04 (slalom/kayar engel), S-05 (tam parkur), E-02 (hızlanma), E-03 (BMS), E-04 (failsafe), B-04 (boyut kontrolü)
-- **Donanım**: Jetson Orin NX + Teensy 4.1 (CAN → 4× VESC 75100), RPLidar S2, RealSense D435if, WT901C-RS485 IMU, ZED-F9P RTK GNSS
+- **Donanım**: Jetson Orin NX + Teensy 4.1 (I2C → 4× Lityumsan e-bike controller, bkz. Motor Sürücü Mimarisi v2), RPLidar S2, RealSense D435if (**tedarikte yok** — takip edilmesi gereken açık risk), WT901C-RS485 IMU, ZED-F9P RTK GNSS
+
+### Motor Sürücü Mimarisi (v2 - 14 Temmuz güncellemesi)
+
+- **Motor sürücü değişikliği**: Dual VESC 75100 + CAN bus planı terk edildi. Yerine: 4x Lityumsan 48V 22A e-bike controller (analog gaz girişi, dijital/CAN arayüzü yok, tork kontrolü yok, telemetri yok)
+- **Yeni kontrol zinciri**: Teensy 4.1 → I2C → TCA9548A mux (0x70) → 4x PCF8591 DAC (0x48) → OP291 yükseltici → sürücü gaz teli. I2C bus hızı 100 kHz sabit (PCF8591 400 kHz desteklemiyor)
+- **Gaz hattı kalibrasyon referansı**: DAC=0 → <0.1V, DAC=255 → 4.1–4.2V (multimetre/osiloskopla doğrulanır)
+- **Kritik güvenlik riski**: PCF8591'in watchdog'u yok — Teensy donarsa DAC son değerde asılı kalır; bu yüzden Teensy'nin donanım WDT'si açılmalı, WDT reset'inde `setup()` gazları otomatik sıfırlamalı
+- **Kanal eşlemesi**: 0=Ön-Sol, 1=Ön-Sağ, 2=Arka-Sol, 3=Arka-Sağ
+- `/odom` hâlâ sadece enkoder+IMU'dan geliyor (VESC'ten hiç veri alınmıyordu zaten, bu değişmedi)
+- Geri hareket ve nokta dönüş artık ayrı röle + durum makinesi gerektiriyor (motor tam durmadan röle değiştirilemez)
+- **Yön değişim prosedürü (zorunlu sıra)**: `DAC=0` yaz → enkoderden hız ≈0 doğrula (yoksa 300ms bekle) → geri rölesini değiştir → 50ms bekle → gaz ver
+- **Kademeli fren**: DAC değişim hızı sınırlanır (maks 5 birim/10ms) + fren teli rölesi — VESC regen fren artık yok
+- **Pin haritası**: geri vites röleleri pin4 (sol) / pin5 (sağ), kilit rölesi pin2 (PC817+BC337); ELRS alıcı Serial7 (RX=pin28, TX=pin29, CRSF, 420000 baud)
+- **Failsafe zamanlaması**: CRSF'den 400ms paket gelmezse → 4 kanala DAC=0 + kilit rölesi LOW
+- Sürücüden telemetri yok — teşhis için Teensy, DAC+enkoder verisini 10Hz'de Jetson'a loglamalı
+- Anti-windup PID ayarı şart (sürücünün iç rampası nedeniyle entegral birikir)
+- `setup()`'ta İLK İŞ her zaman 4 kanala DAC=0 yazmak (güvenlik kuralı)
+- **Etkilenen günler**: Gün 2 (I2C/DAC bring-up, VESC Tool artık yok), Gün 6 (CAN kısmı kalktı, PID/enkoder/EKF aynı), Gün 7 (yeni: geri vites/nokta dönüş durum makinesi), Gün 8 (kademeli fren artık yazılımsal DAC azaltma), Gün 11 (kalibrasyon süreci farklı)
+- Güncel detaylı plan: `talha_yol_haritasi_v2.md` (repo dışında, Talha'da duruyor — gerekirse içeriğini iste)
 
 ## Key Physical Parameters
 - Wheel separation: 1.04 m; wheel radius: 0.165 m

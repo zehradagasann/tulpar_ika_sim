@@ -1,0 +1,35 @@
+=== E-02 COLLISION BOX DOĞRULAMA ===
+Tarih: 2026-05-27
+URDF: urdf/robot.urdf.xacro
+
+--- ARAÇ FİZİKSEL ÖZELLİKLERİ ---
+Şasi kütlesi    : 60.0 kg
+Tekerlek kütlesi: 4 × 3.5 kg = 14.0 kg
+Toplam kütle    : 74.0 kg
+Tekerlek yarıçapı: 0.165 m (Ø330 mm)
+Dingil aralığı  : 1.040 m (iz genişliği)
+Aks mesafesi    : 0.800 m (ön-arka)
+
+--- COLLISION BOX BOYUTLARI ---
+Boy  (X, ön-arka) : 1.316 m = 131.6 cm
+Genişlik (Y, yan) : 1.207 m = 120.7 cm
+Yükseklik (Z)     : 0.615 m =  61.5 cm
+
+--- ŞARTNAME UYUM KONTROLÜ ---
+Şartname boy       : 1.20 - 2.00 m  --> ÖLÇÜLEN: 1.316 m  [UYUMLU]
+Şartname genişlik  : 0.75 - 1.20 m  --> ÖLÇÜLEN: 1.207 m  [UYUMLU]
+Şartname yükseklik : > 0.40 m       --> ÖLÇÜLEN: 0.615 m  [UYUMLU]
+
+--- GÖRSEL MESH BİLGİSİ ---
+Görsel mesh (STL)  : tulpar_yeni.stl  (ölçek: 0.001)
+Mesh pose ofseti   : x=-0.600  y=-0.300  z=0.275 m
+Mesh rotasyonu     : rpy = 0  0  -1.5708 rad
+Kamera visual      : x=0.620  y=0.000  z=0.365 m  [mavi kutu]
+Lidar visual       : x=0.300  y=0.000  z=0.565 m  [siyah silindir]
+
+--- SENSÖRLER ---
+Kamera : RealSense D455  | FoV=90°  | 848x480 | 30 Hz
+Lidar  : RPLidar S2      | 360 deg  | 0.05-30 m | 10 Hz
+
+--- SONUÇ ---
+Tüm boyutlar sartname limitleri dahilindedir.

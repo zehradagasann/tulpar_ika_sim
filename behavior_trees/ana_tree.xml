@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!--
+  ana_tree.xml — TULPAR İKA ana Behavior Tree TASLAĞI (BehaviorTree.CPP v4)
+
+  Amaç: Sistem hazır olduktan sonra parkur boyunca varsayılan davranış
+  otonom sürüştür (Nav2). Kamera bir tabela/hedef algıladığında Nav2
+  durdurulur, hedef kilitlenir, atış (lazer işaretleme) yapılır ve
+  otonom sürüşe geri dönülür. Bu döngü parkur bitene kadar tekrarlanır.
+
+  DURUM: Bu sadece bir taslaktır. Aşağıdaki node'ların HİÇBİRİNİN
+  gerçek C++ implementasyonu yoktur — sadece isim/arayüz olarak
+  tanımlanmıştır (TreeNodesModel bloğu Groot2'nin ağacı hatasız
+  açabilmesi içindir). Gerçek implementasyonlar Gün 2'de yazılacak:
+    - WaitForSystemReady   : donanım/sensör health check bekleme
+    - TabelaAlgılandiMi    : kamera/görüntü işleme sonucuna bağlı condition
+    - ModDegisimiYap       : Nav2'yi durdur/beklet (ör. cancel_goal / pause)
+    - HedefTespitYap       : kamera ile hedef kilitleme
+    - AtisYap              : lazer işaretleme tetikleme
+    - DevamEt              : Nav2'yi otonom sürüşe geri al (goal'u yeniden gönder)
+    - OtonomSurus          : Nav2 NavigateToPose alt-ağacının yer tutucusu
+                              (Gün 2'de gerçek Nav2 BT SubTree'siyle değiştirilecek)
+
+  Test/çalıştırma: Bu dosya Groot2 ile açılıp görsel olarak düzenlenebilir.
+  Henüz bir ROS 2 node'una (BT.CPP executor) bağlanmamıştır.
+-->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="MainTree">
+      <WaitForSystemReady name="Bekleme"/>
+      <Repeat num_cycles="-1" name="ParkurBitenceTekrarla">
+        <ReactiveFallback name="TabelaMiOtonomSurusMu">
+          <Sequence name="TabelaAlgılandiVeAtisAkisi">
+            <TabelaAlgılandiMi name="TabelaAlgılandiMi"/>
+            <ModDegisimiYap name="ModDegisimiYap"/>
+            <HedefTespitYap name="HedefTespitYap"/>
+            <AtisYap name="AtisYap"/>
+            <DevamEt name="DevamEt"/>
+          </Sequence>
+          <OtonomSurus name="OtonomSurus"/>
+        </ReactiveFallback>
+      </Repeat>
+    </Sequence>
+  </BehaviorTree>
+
+  <!--
+    TreeNodesModel: henüz implemente edilmemiş placeholder node'ların
+    tip/ID tanımları. Gerçek implementasyonlar eklendiğinde bu blok
+    ilgili C++ node'larının kayıt bilgisiyle güncellenmeli/kaldırılmalı.
+  -->
+  <TreeNodesModel>
+    <Action ID="WaitForSystemReady">
+      <description>Sistem hazır olana kadar bekler (donanım/sensör health check). Placeholder — Gün 2'de implemente edilecek.</description>
+    </Action>
+    <Condition ID="TabelaAlgılandiMi">
+      <description>Kamera/görüntü işleme çıktısına göre tabela algılanıp algılanmadığını kontrol eder. Placeholder — Gün 2'de implemente edilecek.</description>
+    </Condition>
+    <Action ID="ModDegisimiYap">
+      <description>Nav2'yi durdurur/beklemeye alır (otonom sürüşten atış moduna geçiş). Placeholder — Gün 2'de implemente edilecek.</description>
+    </Action>
+    <Action ID="HedefTespitYap">
+      <description>Kamera ile hedefi tespit edip kilitler. Placeholder — Gün 2'de implemente edilecek.</description>
+    </Action>
+    <Action ID="AtisYap">
+      <description>Lazer işaretleme (atış) işlemini gerçekleştirir. Placeholder — Gün 2'de implemente edilecek.</description>
+    </Action>
+    <Action ID="DevamEt">
+      <description>Nav2'yi otonom sürüşe geri alır (goal yeniden gönderilir). Placeholder — Gün 2'de implemente edilecek.</description>
+    </Action>
+    <Action ID="OtonomSurus">
+      <description>Nav2 NavigateToPose alt-ağacının yer tutucusu. Gün 2'de gerçek Nav2 BT SubTree'siyle değiştirilecek.</description>
+    </Action>
+  </TreeNodesModel>
+</root>

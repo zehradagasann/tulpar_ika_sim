@@ -5,6 +5,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import time
 import csv
+import pathlib
 
 class RampaTesti(Node):
     def __init__(self):
@@ -77,7 +78,7 @@ def main():
     node.cmd_pub.publish(Twist())
 
     # CSV kaydet
-    with open('/home/talha/tulpar_ika_sim/test_kanit/S01/s01_rampa_verisi.csv', 'w', newline='') as f:
+    with open(pathlib.Path(__file__).parent / 's01_rampa_verisi.csv', 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['zaman', 'konum_x', 'konum_z', 'hiz', 'faz'])
         for row in node.veriler:

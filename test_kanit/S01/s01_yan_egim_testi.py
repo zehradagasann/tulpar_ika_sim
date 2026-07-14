@@ -6,6 +6,7 @@ from nav_msgs.msg import Odometry
 import time
 import csv
 import math
+import pathlib
 
 class YanEgimTesti(Node):
     def __init__(self):
@@ -75,7 +76,7 @@ def main():
 
     node.cmd_pub.publish(Twist())
 
-    with open('/home/talha/tulpar_ika_sim/test_kanit/S01/s01_yan_egim_verisi.csv', 'w', newline='') as f:
+    with open(pathlib.Path(__file__).parent / 's01_yan_egim_verisi.csv', 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['zaman', 'konum_x', 'roll_derece'])
         for row in node.veriler:

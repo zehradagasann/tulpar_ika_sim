@@ -2,10 +2,12 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import csv
+import pathlib
+_DIR = pathlib.Path(__file__).parent
 
 zaman, x, z, roll, pitch = [], [], [], [], []
 
-with open('/home/talha/tulpar_ika_sim/test_kanit/S01/s01_tam_parkur_verisi.csv', 'r') as f:
+with open(_DIR / 's01_tam_parkur_verisi.csv', 'r') as f:
     reader = csv.DictReader(f)
     for row in reader:
         zaman.append(float(row['zaman']))
@@ -56,7 +58,7 @@ axes[2].set_title('Pitch Açısı (Öne-Arkaya Eğim)', fontsize=11, fontweight=
 axes[2].grid(True, alpha=0.3); axes[2].legend(fontsize=9)
 
 plt.tight_layout()
-out = '/home/talha/tulpar_ika_sim/test_kanit/S01/S01_tam_parkur_grafigi.png'
+out = _DIR / 'S01_tam_parkur_grafigi.png'
 plt.savefig(out, dpi=150)
 print(f'Grafik kaydedildi: {out}')
 

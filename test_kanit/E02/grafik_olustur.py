@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
 import csv
+import pathlib
+_DIR = pathlib.Path(__file__).parent
 
 zaman, mesafe, hiz = [], [], []
 
-with open('/home/talha/tulpar_ika_sim/test_kanit/E02/hizlanma_verisi.csv', 'r') as f:
+with open(_DIR / 'hizlanma_verisi.csv', 'r') as f:
     reader = csv.DictReader(f)
     for row in reader:
         zaman.append(float(row['zaman']))
@@ -30,7 +32,7 @@ ax2.grid(True, alpha=0.3)
 ax2.legend(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('/home/talha/tulpar_ika_sim/test_kanit/E02/E02_hizlanma_grafigi.png', dpi=150)
+plt.savefig(_DIR / 'E02_hizlanma_grafigi.png', dpi=150)
 print('Grafik kaydedildi!')
 
 print(f'\n--- E-02 TEST SONUÇLARI ---')

@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-import subprocess, threading, time, csv, math, re
+import subprocess, threading, time, csv, math, re, pathlib
 
 class TamParkurTesti(Node):
     def __init__(self):
@@ -174,7 +174,7 @@ def main():
     print(f"Tümsekler:      {'✓ GEÇTİ' if rapor['tumsek']['gecti'] else '✗ GEÇEMEDİ'}  max_z={rapor['tumsek']['max_z']:.3f}m")
     print('='*50)
 
-    with open('/home/talha/tulpar_ika_sim/test_kanit/S01/s01_tam_parkur_verisi.csv', 'w', newline='') as f:
+    with open(pathlib.Path(__file__).parent / 's01_tam_parkur_verisi.csv', 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['zaman', 'konum_x', 'konum_z', 'roll', 'pitch'])
         for row in node.veriler:

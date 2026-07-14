@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
 import csv
+import pathlib
+_DIR = pathlib.Path(__file__).parent
 
 zaman, mesafe, konum_y, hiz_x, hiz_y = [], [], [], [], []
 
-with open('/home/talha/tulpar_ika_sim/test_kanit/S01/s01_odom_verisi.csv', 'r') as f:
+with open(_DIR / 's01_odom_verisi.csv', 'r') as f:
     reader = csv.DictReader(f)
     for row in reader:
         zaman.append(float(row['zaman']))
@@ -38,7 +40,7 @@ ax2.grid(True, alpha=0.3)
 ax2.legend(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('/home/talha/tulpar_ika_sim/test_kanit/S01/S01_zemin_grafigi.png', dpi=150)
+plt.savefig(_DIR / 'S01_zemin_grafigi.png', dpi=150)
 print('Grafik kaydedildi!')
 print(f'\n--- S-01 TEST SONUÇLARI ---')
 print(f'Toplam sure: {zaman[-1]:.2f} s')

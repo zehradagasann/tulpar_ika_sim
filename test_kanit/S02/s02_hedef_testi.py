@@ -9,7 +9,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-import math, time, csv
+import math, time, csv, pathlib
 
 HEDEF_X = 10.0
 HEDEF_Y = 0.0
@@ -18,7 +18,7 @@ KAMERA_OFSET_X = 0.62
 KAMERA_FOV_RAD = 1.5708        # 90 derece
 MERKEZ_TOLERANS_DEG = 2.0      # ±2° merkez toleransı
 KILIT_SURESI = 1.0             # saniye
-VERI_DOSYA = '/home/talha/tulpar_ika_sim/test_kanit/S02/s02_hedef_verisi.csv'
+VERI_DOSYA = pathlib.Path(__file__).parent / 's02_hedef_verisi.csv'
 
 
 class HedefTespitTesti(Node):

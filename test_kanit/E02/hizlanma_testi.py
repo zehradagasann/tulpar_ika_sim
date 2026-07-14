@@ -4,6 +4,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import time
+import pathlib
 
 class HizlanmaTesti(Node):
     def __init__(self):
@@ -51,7 +52,7 @@ def main():
     dur = Twist()
     node.cmd_pub.publish(dur)
     node.get_logger().info('Arac durduruldu.')
-    with open('/home/talha/tulpar_ika_sim/test_kanit/E02/hizlanma_verisi.csv', 'w') as f:
+    with open(pathlib.Path(__file__).parent / 'hizlanma_verisi.csv', 'w') as f:
         f.write('zaman,mesafe,hiz\n')
         for t, m, v in node.veriler:
             f.write(f'{t:.3f},{m:.4f},{v:.4f}\n')

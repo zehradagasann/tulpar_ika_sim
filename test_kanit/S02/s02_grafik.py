@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import csv
+import pathlib
+_DIR = pathlib.Path(__file__).parent
 
 zaman, mesafe, sapma, lazer = [], [], [], []
 
-with open('/home/talha/tulpar_ika_sim/test_kanit/S02/s02_hedef_verisi.csv', 'r') as f:
+with open(_DIR / 's02_hedef_verisi.csv', 'r') as f:
     reader = csv.DictReader(f)
     for row in reader:
         zaman.append(float(row['zaman']))
@@ -41,7 +43,7 @@ ax2.grid(True, alpha=0.3)
 ax2.legend(fontsize=10)
 
 plt.tight_layout()
-out = '/home/talha/tulpar_ika_sim/test_kanit/S02/S02_hedef_grafigi.png'
+out = _DIR / 'S02_hedef_grafigi.png'
 plt.savefig(out, dpi=150)
 print(f'Grafik kaydedildi: {out}')
 

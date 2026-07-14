@@ -73,6 +73,12 @@ Each test is a standalone ROS 2 node that publishes `/cmd_vel` and subscribes `/
 ### Behavior Tree (`behavior_trees/`)
 `ana_tree.xml` — main Behavior Tree draft (BehaviorTree.CPP v4, `BTCPP_format="4"`, Groot2-openable). Sequence: wait for system ready → repeat until course end → ReactiveFallback between (sign-detected shoot flow: stop Nav2, lock target, fire laser, resume Nav2) and default autonomous driving (Nav2 `NavigateToPose` placeholder). All action/condition nodes (`TabelaAlgılandiMi`, `HedefTespitYap`, `AtisYap`, etc.) are unimplemented placeholders — real C++ node registrations land on Day 2.
 
+### Yer İstasyonu (`yer_istasyonu/`)
+Electron + React + rclnodejs ile yazılmış masaüstü kontrol konsolu iskeleti. Şu an sadece "TULPAR İKA Yer İstasyonu" başlığı gösteren boş bir pencere - main process'te rclnodejs.init() ile bir ROS 2 node'u ("yer_istasyonu_node") oluşturuluyor ve DDS ağına katılıyor (ros2 node list ile doğrulandı). Telemetri, heartbeat yayını, olay günlüğü paneli gibi gerçek işlevler henüz implemente edilmedi - Gün 3'te eklenecek.
+
+Çalıştırma: `cd yer_istasyonu && npm start`
+Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabilir (`SUID sandbox helper binary...`) - çözüm: `node_modules/electron/dist/chrome-sandbox` dosyasını root:root/4755 yap, veya `npm start -- --noSandbox` kullan.
+
 ## Proje Bağlamı
 
 - **Yarışma**: TEKNOFEST 2026 İnsansız Kara Aracı (İKA) — Araç: TULPAR
@@ -89,3 +95,7 @@ Each test is a standalone ROS 2 node that publishes `/cmd_vel` and subscribes `/
 - Max linear velocity: 0.785 m/s; max angular velocity: 7.854 rad/s
 - Max wheel torque: 50 Nm (in SDF world); 21.6 Nm (in URDF plugin — SDF takes precedence when robot is embedded in world)
 - Physics: ODE solver, 1 ms step, 1000 Hz update rate, 100 iterations
+
+## Gün Bazlı İlerleme Notları
+
+- Gün 1 (14 Temmuz 2026) tamamlandı: BT taslağı (behavior_trees/), yer istasyonu iskeleti (yer_istasyonu/), repo temizliği ve worlds/ install bug düzeltmesi, PR #1 açıldı ve yazilim_gelistirme'ye merge edildi.

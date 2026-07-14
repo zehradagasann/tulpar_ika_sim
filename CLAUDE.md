@@ -78,7 +78,24 @@ Each test is a standalone ROS 2 node that publishes `/cmd_vel` and subscribes `/
 | `E02/` | 30 m straight-line acceleration at 0.5 m/s |
 
 ### Behavior Tree (`behavior_trees/`)
-`ana_tree.xml` — main Behavior Tree draft (BehaviorTree.CPP v4, `BTCPP_format="4"`, Groot2-openable). Bu BT sadece TAM-OTONOM koşuyu (şartname 1.1 - 2. Koşu) modelliyor; Manuel koşu (1. Koşu, RC/kumanda ile) bu ağacın dışında, ELRS/RC override katmanında yönetiliyor. Sequence: wait for system ready → repeat until course end → ReactiveFallback between three branches: (1) sign-detected shoot flow (stop Nav2, lock target, fire laser, resume Nav2), (2) `DikEgimStopAkisi` — rampadaki işaretli stop noktasında (`StopNoktasindaMi`) tam durup en az 2 sn bekleme (`DurVeBekle`, şartname 6.10), (3) default autonomous driving (Nav2 `NavigateToPose` placeholder). Parkurdaki her tabela BT node'u gerektirmiyor — sadece davranış değişikliği gerektirenler (atış, dik eğim stop) burada modellendi; su geçişi, çakıllı yol, yan eğim, dik engel, trafik konileri, kayar engel ve engebeli arazi gibi diğer bölümler Nav2/costmap parametreleriyle sürekli geçiliyor (Zehra'nın parkur algoritmaları kapsamı, ayrı BT node'u gerektirmiyor). All action/condition nodes (`TabelaAlgılandiMi`, `HedefTespitYap`, `AtisYap`, `StopNoktasindaMi`, `DurVeBekle`, etc.) are unimplemented placeholders — real C++ node registrations land on Day 2.
+`ana_tree.xml` — main Behavior Tree draft (BehaviorTree.CPP v4, `BTCPP_format="4"`, Groot2-openable). Bu BT sadece TAM-OTONOM koşuyu (şartname 1.1 - 2. Koşu) modelliyor; Manuel koşu (1. Koşu, RC/kumanda ile) bu ağacın dışında, ELRS/RC override katmanında yönetiliyor. Sequence: wait for system ready → repeat until course end → ReactiveFallback between three branches: (1) sign-detected shoot flow (stop Nav2, lock target, fire laser, resume Nav2), (2) `DikEgimStopAkisi` — rampadaki işaretli stop noktasında (`StopNoktasindaMi`) tam durup en az 2 sn bekleme (`DurVeBekle`, şartname 6.10), (3) default autonomous driving (Nav2 `NavigateToPose` placeholder). Parkurdaki her tabela BT node'u gerektirmiyor — sadece davranış değişikliği gerektirenler (atış, dik eğim stop) burada modellendi; su geçişi, çakıllı yol, yan eğim, dik engel, trafik konileri, kayar engel ve engebeli arazi gibi diğer bölümler Nav2/costmap parametreleriyle sürekli geçiliyor (Zehra'nın parkur algoritmaları kapsamı, ayrı BT node'u gerektirmiyor). All action/condition nodes now have real C++ implementations in `tulpar_bt/` (see below) — no longer placeholders.
+
+### Behavior Tree Executor (`tulpar_bt/`)
+Yeni C++ paketi: `tulpar_bt` (ament_cmake). Symlink kurulumu gerekiyor — bkz. Build & Run bölümündeki "One-time setup" notu.
+
+9 BT node'unun C++ implementasyonu tamamlandı (artık placeholder değiller):
+- **TAM İMPLEMENTE**: `WaitForSystemReady`, `OtonomSurus`, `ModDegisimiYap`, `DevamEt`, `StopNoktasindaMi`, `DurVeBekle`
+- **YAZILIMSAL TAMAMLANDI** (donanım/ekip verisi bekleniyor): `TabelaAlgılandiMi` (Emin'in `/tabela_tespit` yayınını bekliyor), `HedefTespitYap` ve `AtisYap` (lazer donanımını bekliyor — servis yoksa `simulate_mode` ile simüle edilir)
+
+`WaitForSystemReady`, Nav2 lifecycle_manager entegrasyonu yapar: `bt_navigator`/`controller_server`/`planner_server`'ın ACTIVE durumda olduğunu `lifecycle_msgs/GetState` ile kontrol eder.
+
+Çalıştırma: `ros2 run tulpar_bt bt_executor` (ya da `ros2 launch tulpar_bt bt_executor.launch.py`)
+
+**Bilinen davranış**: `ana_tree.xml`'deki `Repeat` düğümü `ForceSuccess` ile sarılı — tek bir dal FAILURE dönse bile döngü kalıcı durmuyor (BT.CPP'de `Repeat`'in doğal davranışı child FAILURE'da kalıcı durmaktır). Parkur bitiş koşulu henüz tanımlı değil — Gün 4'te ele alınacak.
+
+`OtonomSurus`'un hedef kaynağı `/tulpar_bt/hedef_pose` topic'i — Zehra'nın parkur algoritması yayınlayacak, henüz bağlı değil.
+
+Gerçek uçtan uca test sahte/mock Nav2 (fake lifecycle node'lar + fake `navigate_to_pose` action server) ile yapıldı ve doğrulandı. Gerçek Gazebo+Nav2 testi Gün 4'te.
 
 ### Yer İstasyonu (`yer_istasyonu/`)
 Electron + React + rclnodejs ile yazılmış masaüstü kontrol konsolu iskeleti. Şu an sadece "TULPAR İKA Yer İstasyonu" başlığı gösteren boş bir pencere - main process'te rclnodejs.init() ile bir ROS 2 node'u ("yer_istasyonu_node") oluşturuluyor ve DDS ağına katılıyor (ros2 node list ile doğrulandı). Telemetri, heartbeat yayını, olay günlüğü paneli gibi gerçek işlevler henüz implemente edilmedi - Gün 3'te eklenecek.
@@ -125,3 +142,4 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 ## Gün Bazlı İlerleme Notları
 
 - Gün 1 (14 Temmuz 2026) tamamlandı: BT taslağı (behavior_trees/), yer istasyonu iskeleti (yer_istasyonu/), repo temizliği ve worlds/ install bug düzeltmesi, PR #1 açıldı ve yazilim_gelistirme'ye merge edildi.
+- Gün 2 (14 Temmuz 2026 - devam) BT node implementasyonu tamamlandı: tulpar_bt paketi, 9 node (6 tam implemente, 3 yazılımsal tamamlandı/donanım+ekip bekliyor), 3 gerçek sorun bulunup çözüldü (colcon paket keşfi, Nav2 çökme riski, Repeat kalıcı ölüm riski).

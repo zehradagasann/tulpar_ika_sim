@@ -45,10 +45,10 @@ class YanEgimTesti(Node):
             self.bitti = True
             self.get_logger().error(f'ARAÇ DEVRİLDİ! roll={roll_deg:.1f}°')
 
-        if 6.0 <= x <= 10.0:
+        if 9.0 <= x <= 13.4:
             self.get_logger().info(f'Yan eğimde: x={x:.2f}m, roll={roll_deg:.2f}°')
 
-        if x >= 12.0 and not self.bitti:
+        if x >= 13.5 and not self.bitti:
             self.bitti = True
             self.get_logger().info(f'Yan eğim geçildi! Max roll: {self.max_roll:.2f}°')
             if self.max_roll < 20.0:

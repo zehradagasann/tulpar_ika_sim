@@ -19,79 +19,88 @@
   gibi diğer parkur bölümleri Nav2/costmap parametreleriyle sürekli
   (BT'ye ayrı dal eklemeden) geçilir.
 
-  DURUM: Bu sadece bir taslaktır. Aşağıdaki node'ların HİÇBİRİNİN
-  gerçek C++ implementasyonu yoktur — sadece isim/arayüz olarak
-  tanımlanmıştır (TreeNodesModel bloğu Groot2'nin ağacı hatasız
-  açabilmesi içindir). Gerçek implementasyonlar Gün 2'de yazılacak:
-    - WaitForSystemReady   : donanım/sensör health check bekleme
-    - TabelaAlgılandiMi    : kamera/görüntü işleme sonucuna bağlı condition
-    - ModDegisimiYap       : Nav2'yi durdur/beklet (ör. cancel_goal / pause)
-    - HedefTespitYap       : kamera ile hedef kilitleme
-    - AtisYap              : lazer işaretleme tetikleme
-    - DevamEt              : Nav2'yi otonom sürüşe geri al (goal'u yeniden gönder)
-    - StopNoktasindaMi     : rampadaki işaretli stop noktasına ulaşıldı mı (condition)
-    - DurVeBekle           : tam durup en az 2 saniye bekleme (şartname madde 6.10)
-    - OtonomSurus          : Nav2 NavigateToPose alt-ağacının yer tutucusu
-                              (Gün 2'de gerçek Nav2 BT SubTree'siyle değiştirilecek)
+  ÖNEMLİ — ForceSuccess: Repeat(num_cycles=-1) BT.CPP'de "child SUCCESS
+  döndüğü sürece sonsuz döngü" demektir — child bir kez FAILURE dönerse
+  Repeat kalıcı olarak durur. ReactiveFallback'in üç dalı da aynı anda
+  başarısız olabilir (ör. henüz hedef pose gelmemişse OtonomSurus da
+  FAILURE döner) — bu yüzden ReactiveFallback bir ForceSuccess içine
+  alınmıştır: dallardan hiçbiri başarılı olmasa da Repeat'e SUCCESS
+  görünür ve döngü hiçbir zaman kalıcı olarak durmaz. Gerçek C++
+  implementasyonlarıyla test edilirken bulunmuş, kasıtlı bir düzeltmedir
+  — kaldırılmamalıdır.
 
-  Test/çalıştırma: Bu dosya Groot2 ile açılıp görsel olarak düzenlenebilir.
-  Henüz bir ROS 2 node'una (BT.CPP executor) bağlanmamıştır.
+  DURUM: 9 node'un tamamı `tulpar_bt` paketinde (src/tulpar_ika_sim/tulpar_bt/)
+  gerçek C++ implementasyonlarına kavuştu — placeholder değiller. İki grup var:
+    - TAM İMPLEMENTE (donanıma bağımlı değil): WaitForSystemReady,
+      OtonomSurus, ModDegisimiYap, DevamEt, StopNoktasindaMi, DurVeBekle
+    - YAZILIMSAL TAMAMLANDI (donanım/başka ekip üyesinin verisi bekleniyor):
+      TabelaAlgılandiMi (Emin'in görüntü işleme çıktısı — /tabela_tespit
+      topic'i), HedefTespitYap ve AtisYap (lazer donanımı — /hedef_tespit_yap
+      ve /atis_yap servisleri; gerçek servis yoksa simulate_mode ile
+      simüle edilir, "SİMÜLASYON" olarak loglanır)
+  Detaylar için ilgili .hpp dosyalarının başındaki yorumlara bakın.
+
+  Test/çalıştırma: `ros2 launch tulpar_bt bt_executor.launch.py` (veya
+  `ros2 run tulpar_bt bt_executor`). Nav2 ayakta değilse agac kurulumu
+  otomatik olarak retry eder (crash etmez). Bu dosya Groot2 ile de
+  görsel olarak açılıp incelenebilir.
 -->
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <Sequence name="MainTree">
       <WaitForSystemReady name="Bekleme"/>
       <Repeat num_cycles="-1" name="ParkurBitenceTekrarla">
-        <ReactiveFallback name="TabelaMiOtonomSurusMu">
-          <Sequence name="TabelaAlgılandiVeAtisAkisi">
-            <TabelaAlgılandiMi name="TabelaAlgılandiMi"/>
-            <ModDegisimiYap name="ModDegisimiYap"/>
-            <HedefTespitYap name="HedefTespitYap"/>
-            <AtisYap name="AtisYap"/>
-            <DevamEt name="DevamEt"/>
-          </Sequence>
-          <Sequence name="DikEgimStopAkisi">
-            <StopNoktasindaMi name="StopNoktasindaMi"/>
-            <DurVeBekle name="DurVeBekle"/>
-          </Sequence>
-          <OtonomSurus name="OtonomSurus"/>
-        </ReactiveFallback>
+        <ForceSuccess>
+          <ReactiveFallback name="TabelaMiOtonomSurusMu">
+            <Sequence name="TabelaAlgılandiVeAtisAkisi">
+              <TabelaAlgılandiMi name="TabelaAlgılandiMi"/>
+              <ModDegisimiYap name="ModDegisimiYap"/>
+              <HedefTespitYap name="HedefTespitYap"/>
+              <AtisYap name="AtisYap"/>
+              <DevamEt name="DevamEt"/>
+            </Sequence>
+            <Sequence name="DikEgimStopAkisi">
+              <StopNoktasindaMi name="StopNoktasindaMi"/>
+              <DurVeBekle name="DurVeBekle"/>
+            </Sequence>
+            <OtonomSurus name="OtonomSurus"/>
+          </ReactiveFallback>
+        </ForceSuccess>
       </Repeat>
     </Sequence>
   </BehaviorTree>
 
   <!--
-    TreeNodesModel: henüz implemente edilmemiş placeholder node'ların
-    tip/ID tanımları. Gerçek implementasyonlar eklendiğinde bu blok
-    ilgili C++ node'larının kayıt bilgisiyle güncellenmeli/kaldırılmalı.
+    TreeNodesModel: tulpar_bt paketindeki gerçek C++ node'larının tip/ID
+    tanımları (Groot2'nin ağacı doğru şekilde gösterebilmesi için).
   -->
   <TreeNodesModel>
     <Action ID="WaitForSystemReady">
-      <description>Sistem hazır olana kadar bekler (donanım/sensör health check). Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>TAM İMPLEMENTE. Nav2 lifecycle node'larının (varsayılan: bt_navigator, controller_server, planner_server) hepsi ACTIVE olana kadar lifecycle_msgs/GetState servisleriyle bekler.</description>
     </Action>
     <Condition ID="TabelaAlgılandiMi">
-      <description>Kamera/görüntü işleme çıktısına göre tabela algılanıp algılanmadığını kontrol eder. Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>YAZILIMSAL TAMAMLANDI — Emin'in görüntü işleme çıktısı bekleniyor. /tabela_tespit (std_msgs/Bool) topic'ine subscribe olur; elle test edilebilir: ros2 topic pub /tabela_tespit std_msgs/msg/Bool "{data: true}"</description>
     </Condition>
     <Action ID="ModDegisimiYap">
-      <description>Nav2'yi durdurur/beklemeye alır (otonom sürüşten atış moduna geçiş). Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>TAM İMPLEMENTE. navigate_to_pose action client'ı ile Nav2'nin aktif goal'unu gerçekten iptal eder (async_cancel_all_goals).</description>
     </Action>
     <Action ID="HedefTespitYap">
-      <description>Kamera ile hedefi tespit edip kilitler. Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>YAZILIMSAL TAMAMLANDI — lazer/hedef kilitleme donanımı bekleniyor. /hedef_tespit_yap (std_srvs/Trigger) service client; servis yoksa simulate_mode ile simüle edip SUCCESS döner ("SİMÜLASYON" logu).</description>
     </Action>
     <Action ID="AtisYap">
-      <description>Lazer işaretleme (atış) işlemini gerçekleştirir. Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>YAZILIMSAL TAMAMLANDI — lazer donanımı bekleniyor. /atis_yap (std_srvs/Trigger) service client; servis yoksa simulate_mode ile simüle edip SUCCESS döner ("SİMÜLASYON" logu).</description>
     </Action>
     <Action ID="DevamEt">
-      <description>Nav2'yi otonom sürüşe geri alır (goal yeniden gönderilir). Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>TAM İMPLEMENTE. navigate_to_pose action server'ının tekrar hazır olduğunu doğrular (action_server_is_ready), hazırsa SUCCESS döner.</description>
     </Action>
     <Condition ID="StopNoktasindaMi">
-      <description>Rampa üzerindeki şartname madde 6.10 işaretli stop noktasına ulaşılıp ulaşılmadığını kontrol eder. Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>TAM İMPLEMENTE. /odom (nav_msgs/Odometry) subscriber ile gerçek pozisyonu şartname madde 6.10 stop noktalarıyla karşılaştırır; her nokta en fazla bir kez tetiklenir.</description>
     </Condition>
     <Action ID="DurVeBekle">
-      <description>Aracı tam durdurup en az 2 saniye bekletir (şartname madde 6.10). Placeholder — Gün 2'de implemente edilecek.</description>
+      <description>TAM İMPLEMENTE. /cmd_vel'e sıfır Twist basarak aracı gerçekten durdurur, gerçek wall-clock süreyle en az 2.0 saniye (bekleme_sn portu) bekler.</description>
     </Action>
     <Action ID="OtonomSurus">
-      <description>Nav2 NavigateToPose alt-ağacının yer tutucusu. Gün 2'de gerçek Nav2 BT SubTree'siyle değiştirilecek.</description>
+      <description>TAM İMPLEMENTE. nav2_behavior_tree::BtActionNode tabanlı gerçek Nav2 NavigateToPose action client'ı. Hedef pose /tulpar_bt/hedef_pose (geometry_msgs/PoseStamped) topic'inden alınır.</description>
     </Action>
   </TreeNodesModel>
 </root>

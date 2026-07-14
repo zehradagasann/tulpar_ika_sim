@@ -10,10 +10,17 @@ This is a ROS 2 / Gazebo Harmonic simulation package for the **Tulpar IKA** — 
 
 The colcon workspace root is `~/tulpar_ws`. The repo lives at `~/tulpar_ws/src/tulpar_ika_sim`.
 
+**One-time setup after a fresh clone**: `tulpar_bt/` lives inside the `tulpar_ika_sim` repo (so it's tracked in the same git history/PR flow), but colcon's recursive package discovery stops descending once it finds `tulpar_ika_sim` itself as a package (repo root = `tulpar_description`). It won't see a package nested inside another package's directory. A symlink at the `src/` level works around this:
+```bash
+ln -s ~/tulpar_ws/src/tulpar_ika_sim/tulpar_bt ~/tulpar_ws/src/tulpar_bt
+```
+This symlink is workspace-local (not part of the git repo, not committed) — recreate it after every fresh clone/workspace setup. Without it, `colcon build` silently skips `tulpar_bt`.
+
 ```bash
 # Build
 cd ~/tulpar_ws
 colcon build --packages-select tulpar_description
+colcon build --packages-select tulpar_bt
 
 # Source the workspace (required before ros2 commands)
 source ~/tulpar_ws/install/setup.bash

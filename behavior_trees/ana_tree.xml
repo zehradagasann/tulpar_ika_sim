@@ -5,7 +5,19 @@
   Amaç: Sistem hazır olduktan sonra parkur boyunca varsayılan davranış
   otonom sürüştür (Nav2). Kamera bir tabela/hedef algıladığında Nav2
   durdurulur, hedef kilitlenir, atış (lazer işaretleme) yapılır ve
-  otonom sürüşe geri dönülür. Bu döngü parkur bitene kadar tekrarlanır.
+  otonom sürüşe geri dönülür. Dik eğim rampasında işaretli stop
+  noktasına ulaşıldığında araç tam durup en az 2 saniye bekler, sonra
+  devam eder (şartname madde 6.10). Bu döngü parkur bitene kadar
+  tekrarlanır.
+
+  KAPSAM: Bu BT sadece TAM-OTONOM koşuyu modeller (şartname madde 1.1 —
+  2. Koşu). Manuel koşu (1. Koşu) bu ağacın dışında, RC/ELRS katmanında
+  yönetilir. Ayrıca parkurdaki her tabela/bölüm için ayrı bir BT node'u
+  yoktur — sadece davranış değişikliği gerektiren tabelalar (atış, dik
+  eğim stop) burada node olarak modellenmiştir. Su geçişi, çakıllı yol,
+  yan eğim, dik engel, trafik konileri, kayar engel ve engebeli arazi
+  gibi diğer parkur bölümleri Nav2/costmap parametreleriyle sürekli
+  (BT'ye ayrı dal eklemeden) geçilir.
 
   DURUM: Bu sadece bir taslaktır. Aşağıdaki node'ların HİÇBİRİNİN
   gerçek C++ implementasyonu yoktur — sadece isim/arayüz olarak
@@ -17,6 +29,8 @@
     - HedefTespitYap       : kamera ile hedef kilitleme
     - AtisYap              : lazer işaretleme tetikleme
     - DevamEt              : Nav2'yi otonom sürüşe geri al (goal'u yeniden gönder)
+    - StopNoktasindaMi     : rampadaki işaretli stop noktasına ulaşıldı mı (condition)
+    - DurVeBekle           : tam durup en az 2 saniye bekleme (şartname madde 6.10)
     - OtonomSurus          : Nav2 NavigateToPose alt-ağacının yer tutucusu
                               (Gün 2'de gerçek Nav2 BT SubTree'siyle değiştirilecek)
 
@@ -35,6 +49,10 @@
             <HedefTespitYap name="HedefTespitYap"/>
             <AtisYap name="AtisYap"/>
             <DevamEt name="DevamEt"/>
+          </Sequence>
+          <Sequence name="DikEgimStopAkisi">
+            <StopNoktasindaMi name="StopNoktasindaMi"/>
+            <DurVeBekle name="DurVeBekle"/>
           </Sequence>
           <OtonomSurus name="OtonomSurus"/>
         </ReactiveFallback>
@@ -65,6 +83,12 @@
     </Action>
     <Action ID="DevamEt">
       <description>Nav2'yi otonom sürüşe geri alır (goal yeniden gönderilir). Placeholder — Gün 2'de implemente edilecek.</description>
+    </Action>
+    <Condition ID="StopNoktasindaMi">
+      <description>Rampa üzerindeki şartname madde 6.10 işaretli stop noktasına ulaşılıp ulaşılmadığını kontrol eder. Placeholder — Gün 2'de implemente edilecek.</description>
+    </Condition>
+    <Action ID="DurVeBekle">
+      <description>Aracı tam durdurup en az 2 saniye bekletir (şartname madde 6.10). Placeholder — Gün 2'de implemente edilecek.</description>
     </Action>
     <Action ID="OtonomSurus">
       <description>Nav2 NavigateToPose alt-ağacının yer tutucusu. Gün 2'de gerçek Nav2 BT SubTree'siyle değiştirilecek.</description>

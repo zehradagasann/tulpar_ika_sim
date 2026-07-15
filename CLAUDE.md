@@ -98,7 +98,12 @@ Yeni C++ paketi: `tulpar_bt` (ament_cmake). Symlink kurulumu gerekiyor — bkz. 
 Gerçek uçtan uca test sahte/mock Nav2 (fake lifecycle node'lar + fake `navigate_to_pose` action server) ile yapıldı ve doğrulandı. Gerçek Gazebo+Nav2 testi Gün 4'te.
 
 ### Yer İstasyonu (`yer_istasyonu/`)
-Electron + React + rclnodejs ile yazılmış masaüstü kontrol konsolu iskeleti. Şu an sadece "TULPAR İKA Yer İstasyonu" başlığı gösteren boş bir pencere - main process'te rclnodejs.init() ile bir ROS 2 node'u ("yer_istasyonu_node") oluşturuluyor ve DDS ağına katılıyor (ros2 node list ile doğrulandı). Telemetri, heartbeat yayını, olay günlüğü paneli gibi gerçek işlevler henüz implemente edilmedi - Gün 3'te eklenecek.
+Electron + React + rclnodejs ile yazılmış masaüstü kontrol konsolu. Main process'te rclnodejs.init() ile bir ROS 2 node'u ("yer_istasyonu_node") oluşturuluyor ve DDS ağına katılıyor. Gün 2'de Emin'in KTR madde 3.3.1 görevi olan telemetri paneli ve WebRTC video alıcı eklendi (normalde Emin'in kapsamı, Talha üstlendi):
+
+- **Telemetri paneli**: hız/batarya/sıcaklık/eğim göstergeleri, tek birleşik topic üzerinden besleniyor: `/telemetri/veri` (`std_msgs/String`, JSON payload: `hiz`, `batarya_yuzde`, `sicaklik_c`, `egim_derece`, `zaman_damgasi`).
+- **WebRTC video alıcı**: RTCPeerConnection tabanlı, signaling server URL'i `config.js`'ten alınıyor (env: `VITE_SIGNALING_URL`).
+- **Durum etiketleri**: UI, IPC köprüsü, rclnodejs subscriber mantığı ve WebRTC peer/negotiation mantığı **TAM İMPLEMENTE**. `/telemetri/veri`'ye yayın yapan gerçek Teensy/Jetson köprüsü (Gün 6'da gelecek) ve WebRTC signaling server (Zehra/Emin'in Gün 4 işi) henüz yok — bu ikisi **YAZILIMSAL TAMAMLANDI - bekleniyor**. Veri/bağlantı gelmezse panel crash etmeden "veri yok/bağlantı bekleniyor" gösterip sürekli yeniden dener.
+- **Düzeltilen bug**: preload script'i `package.json`'daki `"type":"module"` yüzünden electron-vite tarafından ESM (`.mjs`) olarak build ediliyordu; Electron'un sandboxed preload yükleyicisi ESM `import` syntax'ını desteklemiyor, bu yüzden preload sessizce yüklenemiyor ve `window.api` hep `undefined` kalıyordu (Gün 1'de fark edilmemişti çünkü preload boştu). `electron.vite.config.mjs`'e preload için CJS çıktı zorunluluğu eklenerek düzeltildi.
 
 Çalıştırma: `cd yer_istasyonu && npm start`
 Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabilir (`SUID sandbox helper binary...`) - çözüm: `node_modules/electron/dist/chrome-sandbox` dosyasını root:root/4755 yap, veya `npm start -- --noSandbox` kullan.
@@ -143,3 +148,4 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 
 - Gün 1 (14 Temmuz 2026) tamamlandı: BT taslağı (behavior_trees/), yer istasyonu iskeleti (yer_istasyonu/), repo temizliği ve worlds/ install bug düzeltmesi, PR #1 açıldı ve yazilim_gelistirme'ye merge edildi.
 - Gün 2 (14 Temmuz 2026 - devam) BT node implementasyonu tamamlandı: tulpar_bt paketi, 9 node (6 tam implemente, 3 yazılımsal tamamlandı/donanım+ekip bekliyor), 3 gerçek sorun bulunup çözüldü (colcon paket keşfi, Nav2 çökme riski, Repeat kalıcı ölüm riski).
+- Gün 2 (devam) Emin'in KTR 3.3.1 görevi (telemetri paneli + WebRTC video alıcı) üstlenildi ve tamamlandı, ayrıca Gün 1'den kalma gizli bir preload ESM/CJS bug'ı bulunup düzeltildi.

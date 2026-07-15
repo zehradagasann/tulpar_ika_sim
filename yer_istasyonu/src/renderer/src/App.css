@@ -1,0 +1,59 @@
+body {
+  font-family: sans-serif;
+  background: #1b1e23;
+  color: #e8e8e8;
+  margin: 0;
+}
+
+.panel {
+  border: 1px solid #3a3f47;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px;
+}
+
+.durum-mesaji {
+  color: #e0b04a;
+  font-style: italic;
+}
+
+.gosterge-izgara {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gosterge {
+  min-width: 120px;
+}
+
+.gosterge-baslik {
+  font-size: 0.85em;
+  color: #a8adb5;
+}
+
+.gosterge-bar-arkaplan {
+  background: #2a2e35;
+  border-radius: 4px;
+  height: 8px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+
+.gosterge-bar-dolu {
+  background: #4a9de0;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.gosterge-deger {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.video-alici video {
+  width: 100%;
+  max-width: 480px;
+  background: black;
+  border-radius: 6px;
+}

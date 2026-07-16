@@ -1,6 +1,17 @@
 devel/
 logs/
 build/
+install/
+log/
+src/build/
+src/install/
+src/log/
+src/**/__pycache__/
+src/**/.git/
+src/**/.git_backup/
+src/**/build/
+src/**/install/
+src/**/log/
 bin/
 lib/
 msg_gen/

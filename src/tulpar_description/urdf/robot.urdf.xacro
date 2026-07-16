@@ -1,0 +1,348 @@
+<?xml version="1.0"?>
+<robot name="tulpar_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <material name="aluminium">
+    <color rgba="0.75 0.75 0.75 1.0"/>
+  </material>
+
+  <material name="black">
+    <color rgba="0.1 0.1 0.1 1.0"/>
+  </material>
+
+  <material name="camera_blue">
+    <color rgba="0.0 0.2 0.8 1.0"/>
+  </material>
+
+  <material name="sensor_gray">
+    <color rgba="0.3 0.3 0.3 1.0"/>
+  </material>
+
+  <link name="base_footprint"/>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.165" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0.600 -0.300 0.110" rpy="0 0 1.5708"/>
+      <geometry>
+        <mesh filename="package://tulpar_description/meshes/tulpar_ika_assembly.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="aluminium"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.1925" rpy="0 0 0"/>
+      <geometry>
+        <box size="1.316 1.207 0.615"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="60.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="8.520" ixy="0.0" ixz="0.0" iyy="22.140" iyz="0.0" izz="27.180"/>
+    </inertial>
+  </link>
+
+  <xacro:macro name="wheel" params="name x y">
+    <link name="${name}">
+      <visual>
+        <geometry>
+          <cylinder radius="0.165" length="0.12"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.165" length="0.12"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="3.5"/>
+        <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
+      </inertial>
+    </link>
+
+    <joint name="joint_${name}" type="continuous">
+      <parent link="base_link"/>
+      <child link="${name}"/>
+      <origin xyz="${x} ${y} 0" rpy="-1.5708 0 0"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.1" friction="0.5"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:wheel name="wheel_fl" x="0.4" y="0.52"/>
+  <xacro:wheel name="wheel_rl" x="-0.4" y="0.52"/>
+  <xacro:wheel name="wheel_fr" x="0.4" y="-0.52"/>
+  <xacro:wheel name="wheel_rr" x="-0.4" y="-0.52"/>
+
+  <link name="lidar_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.06"/>
+      </geometry>
+      <material name="sensor_gray"/>
+    </visual>
+    <inertial>
+      <mass value="0.25"/>
+      <inertia ixx="0.0015" ixy="0" ixz="0" iyy="0.0015" iyz="0" izz="0.0015"/>
+    </inertial>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0.30 0.0 0.40" rpy="0 0 0"/>
+  </joint>
+
+  <link name="laser_frame"/>
+  <joint name="laser_frame_joint" type="fixed">
+    <parent link="lidar_link"/>
+    <child link="laser_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="d435i_link">
+    <visual>
+      <geometry>
+        <box size="0.09 0.025 0.025"/>
+      </geometry>
+      <material name="camera_blue"/>
+    </visual>
+    <inertial>
+      <mass value="0.08"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="d435i_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="d435i_link"/>
+    <origin xyz="0.62 0.0 0.20" rpy="0 0 0"/>
+  </joint>
+
+  <link name="d435i_color_frame"/>
+  <joint name="d435i_color_joint" type="fixed">
+    <parent link="d435i_link"/>
+    <child link="d435i_color_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="d435i_color_optical_frame"/>
+  <joint name="d435i_color_optical_joint" type="fixed">
+    <parent link="d435i_color_frame"/>
+    <child link="d435i_color_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+  </joint>
+
+  <link name="d435i_depth_frame"/>
+  <joint name="d435i_depth_joint" type="fixed">
+    <parent link="d435i_link"/>
+    <child link="d435i_depth_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="d435i_depth_optical_frame"/>
+  <joint name="d435i_depth_optical_joint" type="fixed">
+    <parent link="d435i_depth_frame"/>
+    <child link="d435i_depth_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+  </joint>
+
+  <link name="rpi_hq_camera_link">
+    <visual>
+      <geometry>
+        <box size="0.038 0.038 0.018"/>
+      </geometry>
+      <material name="sensor_gray"/>
+    </visual>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0004" ixy="0" ixz="0" iyy="0.0004" iyz="0" izz="0.0004"/>
+    </inertial>
+  </link>
+
+  <joint name="rpi_hq_camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rpi_hq_camera_link"/>
+    <origin xyz="0.58 0.0 0.28" rpy="0 0 0"/>
+  </joint>
+
+  <link name="rpi_hq_camera_optical_frame"/>
+  <joint name="rpi_hq_camera_optical_joint" type="fixed">
+    <parent link="rpi_hq_camera_link"/>
+    <child link="rpi_hq_camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+  </joint>
+
+  <link name="rear_camera_link">
+    <visual>
+      <geometry>
+        <box size="0.06 0.03 0.03"/>
+      </geometry>
+      <material name="sensor_gray"/>
+    </visual>
+    <inertial>
+      <mass value="0.07"/>
+      <inertia ixx="0.0008" ixy="0" ixz="0" iyy="0.0008" iyz="0" izz="0.0008"/>
+    </inertial>
+  </link>
+
+  <joint name="rear_camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_camera_link"/>
+    <origin xyz="-0.58 0.0 0.28" rpy="0 0 3.14159"/>
+  </joint>
+
+  <link name="rear_camera_optical_frame"/>
+  <joint name="rear_camera_optical_joint" type="fixed">
+    <parent link="rear_camera_link"/>
+    <child link="rear_camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+  </joint>
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>joint_wheel_fl</left_joint>
+      <left_joint>joint_wheel_rl</left_joint>
+      <right_joint>joint_wheel_fr</right_joint>
+      <right_joint>joint_wheel_rr</right_joint>
+      <wheel_separation>1.04</wheel_separation>
+      <wheel_radius>0.165</wheel_radius>
+      <max_linear_velocity>1.0</max_linear_velocity>
+      <max_angular_velocity>3.0</max_angular_velocity>
+      <max_wheel_torque>25.0</max_wheel_torque>
+      <max_linear_acceleration>2.0</max_linear_acceleration>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint</child_frame_id>
+      <odom_publish_frequency>30</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="lidar_link">
+    <sensor name="ydlidar_tg30" type="gpu_lidar">
+      <update_rate>5</update_rate>
+      <topic>/scan</topic>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle>3.14159</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.05</min>
+          <max>30.0</max>
+          <resolution>0.01</resolution>
+        </range>
+      </lidar>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="d435i_link">
+    <sensor name="d435i_depth" type="depth_camera">
+      <update_rate>10</update_rate>
+      <topic>/d435i/depth/image_raw</topic>
+      <camera>
+        <horizontal_fov>1.5184</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.20</near>
+          <far>10.0</far>
+        </clip>
+      </camera>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="rpi_hq_camera_link">
+    <sensor name="rpi_hq_camera" type="camera">
+      <update_rate>10</update_rate>
+      <topic>/rpi_hq_camera/image_raw</topic>
+      <camera>
+        <horizontal_fov>0.6606</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.10</near>
+          <far>100.0</far>
+        </clip>
+      </camera>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="rear_camera_link">
+    <sensor name="rear_camera" type="camera">
+      <update_rate>5</update_rate>
+      <topic>/rear_camera/image_raw</topic>
+      <camera>
+        <horizontal_fov>1.5708</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.10</near>
+          <far>100.0</far>
+        </clip>
+      </camera>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="wheel_fl">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>1.0</kd>
+  </gazebo>
+
+  <gazebo reference="wheel_rl">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>1.0</kd>
+  </gazebo>
+
+  <gazebo reference="wheel_fr">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>1.0</kd>
+  </gazebo>
+
+  <gazebo reference="wheel_rr">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>1.0</kd>
+  </gazebo>
+
+</robot>

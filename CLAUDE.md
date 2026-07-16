@@ -97,6 +97,20 @@ Yeni C++ paketi: `tulpar_bt` (ament_cmake). Symlink kurulumu gerekiyor — bkz. 
 
 Gerçek uçtan uca test sahte/mock Nav2 (fake lifecycle node'lar + fake `navigate_to_pose` action server) ile yapıldı ve doğrulandı. Gerçek Gazebo+Nav2 testi Gün 4'te.
 
+### RTAB-Map SLAM (`launch/rtabmap.launch.py`)
+
+Lidar-öncelikli 2D+3D SLAM: `/scan` ile ICP tabanlı (`Reg/Strategy=1`) occupancy grid, RGB kamera gerektirmiyor (URDF'de RealSense D455'in sadece depth sensörü var, RGB yok — Gün 4 öncesi güncel URDF gelirse gerçek RGB-D füzyona geçilebilir).
+
+Çalıştırma: `gazebo.launch.py` + ayrı terminalde `rtabmap.launch.py`.
+
+`/camera/depth/points` ayrı 3D görsel katman olarak mevcut, SLAM grafiğine karışmıyor.
+
+`map_always_update:=true` şart — yoksa harita ilk taramadan sonra donuyor.
+
+Bu görevde 4 gerçek altyapı bug'ı bulunup düzeltildi: `GZ_SIM_RESOURCE_PATH` eksikliği (dünya hiç yüklenmiyordu), 3 world SDF'sinde eksik world-seviyesi Gazebo plugin'leri (sensörler sessizce veri üretmiyordu), `odom`→`base_footprint` TF köprüsü eksikliği, `ros-jazzy-diagnostic-updater` ABI uyumsuzluğu (`apt upgrade` ile çözüldü).
+
+`s02_hedef_world.sdf` ve `e02_duz_world.sdf`'ye aynı plugin düzeltmesi uygulandı ama HENÜZ TEST EDİLMEDİ — S02/E02 testlerine dönüldüğünde doğrulanmalı.
+
 ### Yer İstasyonu (`yer_istasyonu/`)
 Electron + React + rclnodejs ile yazılmış masaüstü kontrol konsolu. Main process'te rclnodejs.init() ile bir ROS 2 node'u ("yer_istasyonu_node") oluşturuluyor ve DDS ağına katılıyor. Gün 2'de Emin'in KTR madde 3.3.1 görevi olan telemetri paneli ve WebRTC video alıcı eklendi (normalde Emin'in kapsamı, Talha üstlendi):
 
@@ -149,3 +163,4 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 - Gün 1 (14 Temmuz 2026) tamamlandı: BT taslağı (behavior_trees/), yer istasyonu iskeleti (yer_istasyonu/), repo temizliği ve worlds/ install bug düzeltmesi, PR #1 açıldı ve yazilim_gelistirme'ye merge edildi.
 - Gün 2 (14 Temmuz 2026 - devam) BT node implementasyonu tamamlandı: tulpar_bt paketi, 9 node (6 tam implemente, 3 yazılımsal tamamlandı/donanım+ekip bekliyor), 3 gerçek sorun bulunup çözüldü (colcon paket keşfi, Nav2 çökme riski, Repeat kalıcı ölüm riski).
 - Gün 2 (devam) Emin'in KTR 3.3.1 görevi (telemetri paneli + WebRTC video alıcı) üstlenildi ve tamamlandı, ayrıca Gün 1'den kalma gizli bir preload ESM/CJS bug'ı bulunup düzeltildi.
+- Gün 3 (devam) RTAB-Map SLAM kuruldu ve gerçek Gazebo testiyle doğrulandı (harita oluşumu rviz'de teyit edildi), 4 gerçek altyapı bug'ı bulunup düzeltildi.

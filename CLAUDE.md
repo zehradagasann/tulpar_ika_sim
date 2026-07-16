@@ -42,18 +42,25 @@ python3 test_kanit/S02/s02_hedef_testi.py
 
 ## Architecture
 
-### Robot model (`urdf/robot.urdf.xacro`)
-- Frame hierarchy: `base_footprint` → `base_link` → wheels (FL/RL/FR/RR), `lidar_link`, `camera_link`
-- `base_link` sits 0.165 m above ground (wheel radius); `base_footprint` is at ground level
-- Visual mesh: `meshes/tulpar_yeni.stl` (scaled 0.001 — file is in mm)
-- Gazebo plugins embedded in URDF: `DiffDrive` (subscribes `/cmd_vel`, publishes `/odom`), `JointStatePublisher` (publishes `/joint_states`)
-- Sensors: RPLidar S2 on `lidar_link` (topic `scan`, 800 samples, 30 m range), RealSense D455 on `camera_link` (topic `camera/depth`, 848×480, 0.4–6 m)
+### Robot model (`urdf/robot.urdf.xacro`) — Zehra'nın `feature/zehra-faz1-gun1` branch'i temel alındı (16 Temmuz 2026)
+**Strateji değişikliği**: Bizim kendi ürettiğimiz decimation tabanlı mesh pipeline'ımız (`govde_v2/v3.stl`, `teker_v2/v3.stl` — global ve parça-bazlı decimation denemeleri) terk edildi ve o dosyalar silindi. Mekanik ekip orijinal `tulpar_ika_assembly.stl`'i Blender'da inceleyip tam/eksiksiz olduğunu doğruladı; bizim decimation'ımız küçük-orta braketleri kaybediyordu (kök neden bulundu: global quadric decimation küçük parçaları düşük-öncelikli sanıp siliyor, parça-bazlı decimation da tam çözemedi). Bunun yerine Zehra'nın `~/tulpar_ika_sim_incele` (feature/zehra-faz1-gun1 checkout) içindeki `urdf/robot.urdf.xacro` + ham `tulpar_ika_assembly.stl` (149MB, basitleştirilmemiş) bizim dosyalarımızın YERİNE kondu; sadece fiziksel parametreler (boyut/kütle/dingil/iz/tekerlek yarıçapı/inertia) mekanik ekipten gelen güncel değerlerle değiştirildi.
+- Frame hierarchy: `base_footprint` → `base_link` → wheels (FL/RL/FR/RR), `lidar_link`(+`laser_frame`), `d435i_link`(+`d435i_color_frame`/`d435i_color_optical_frame`/`d435i_depth_frame`/`d435i_depth_optical_frame`, REP-103 optik frame hiyerarşisi), `rpi_hq_camera_link`(+optical frame), `rear_camera_link`(+optical frame)
+- **Sensör link isimleri Zehra'nın adlandırmasıyla birleşti**: `d435i_link` (bizim eski `d435if_link` yerine) ve `rear_camera_link` (bizim eski `sjcam_link` yerine) — Zehra'nınkiler zaten gerçek Gazebo sensor plugin'ine bağlıydı, bizimkiler sadece placeholder'dı. `lidar_link`/`rpi_hq_camera_link` isim olarak zaten aynıydı.
+- `base_link` sits 0.200 m above ground (yeni tekerlek yarıçapı); `base_footprint` is at ground level
+- Şasi: 1200×450×245mm, 64kg (mekanik ekipten) — collision box + kütle + inertia güncellendi: `ixx=1.4001 iyy=8.0001 izz=8.7600` (analitik kutu, üçgen eşitsizliği doğrulandı; collision origin z=0.187 önceki turdan korunan mesh-türevli tahmin)
+- Dingil mesafesi 780mm, teker aralığı 1060mm, tekerlek yarıçapı 200mm (mekanik ekipten). Tekerlek genişliği (`length=0.12`) ve tekerlek kütlesi/inertia'sı (3.5kg/tekerlek) Zehra'nın orijinal değerleri, dokunulmadı.
+- Visual mesh: `meshes/tulpar_ika_assembly.stl` (149MB, ham/basitleştirilmemiş), scale 0.001 (mm) — performans etkisi henüz gerçek Gazebo testiyle ölçülmedi (bkz. spawn_entity eksikliği notu, Gazebo şu an bunu zaten kullanmıyor).
+- Sensors (hepsi Zehra'nın gerçek Gazebo sensor plugin'leriyle bağlı): YDLIDAR TG30 on `lidar_link` (`gpu_lidar`, topic `/scan`, 720 samples, 30m), RealSense D435i on `d435i_link` (`depth_camera`, topic `/d435i/depth/image_raw`), Pi HQ Camera+16mm (atış/nişan) on `rpi_hq_camera_link` (`camera`, topic `/rpi_hq_camera/image_raw`), SJCAM SJ4000 (arka izleme, 180° geriye dönük) on `rear_camera_link` (`camera`, topic `/rear_camera/image_raw`)
+- **BİLİNEN SORUN**: `launch/gazebo.launch.py`'deki `parameter_bridge` hâlâ eski topic isimlerini bridge'liyor (`/camera/depth`, `/camera/camera_info`, `/camera/depth/points`) — yeni URDF'nin gerçek sensör topic'leriyle (`/d435i/depth/image_raw` vb.) eşleşmiyor. Şu an sorun görünmüyor çünkü Gazebo hâlâ `worlds/*.sdf`'deki ESKİ statik gömülü modeli simüle ediyor (aşağıdaki spawn_entity notuna bkz.); spawn mimarisi düzeltilip yeni URDF gerçekten Gazebo'ya girdiğinde bridge de güncellenmeli, aksi halde RTAB-Map'in kullandığı `/camera/depth/points` sessizce veri almaz hale gelir.
+- IMU/GPS: mekanik ekibin planına göre AKV (Araç Kanıt Videosu, 20 Temmuz) sonrası entegre edilecek, URDF'de henüz yok.
 
 ### Launch file (`launch/gazebo.launch.py`)
 Starts three nodes:
 1. `robot_state_publisher` — processes the xacro and publishes `/robot_description` + TF
 2. `gz_sim` — Gazebo Harmonic with `--render-engine ogre`
 3. `parameter_bridge` — bridges ROS ↔ Gazebo topics: `/cmd_vel` (ROS→GZ), `/odom`, `/joint_states`, `/scan`, `/camera/depth` (GZ→ROS)
+
+**BİLİNEN MİMARİ EKSİKLİK (16 Temmuz 2026 tespit edildi, henüz çözülmedi):** Bu launch dosyasında hiçbir spawn mekanizması yok — robot Gazebo'ya sadece `worlds/*.sdf` dosyalarının içine önceden gömülmüş **statik** bir `<model name='tulpar'>` bloğu olarak giriyor (bir noktada eski URDF'den elle dönüştürülüp SDF'ye yapıştırılmış). `robot_state_publisher` sadece `/robot_description`+TF yayınlıyor, Gazebo'ya hiçbir şey spawn etmiyor. **Sonuç: `urdf/robot.urdf.xacro`'da yapılan hiçbir değişiklik (yeni mesh, kütle, sensör konumu) Gazebo'nun fiziksel olarak simüle ettiği robotu etkilemiyor** — sadece RViz/TF tarafını etkiliyor. Düzeltmek için ya (a) worlds SDF'lerindeki gömülü modeli xacro'dan yeniden üretmek ya da (b) `gazebo.launch.py`'ye gerçek bir `spawn_entity` adımı eklemek gerekiyor — ayrı bir görev olarak ele alınacak, henüz yapılmadı.
 
 ### Worlds (`worlds/`)
 | File | Purpose |
@@ -99,7 +106,7 @@ Gerçek uçtan uca test sahte/mock Nav2 (fake lifecycle node'lar + fake `navigat
 
 ### RTAB-Map SLAM (`launch/rtabmap.launch.py`)
 
-Lidar-öncelikli 2D+3D SLAM: `/scan` ile ICP tabanlı (`Reg/Strategy=1`) occupancy grid, RGB kamera gerektirmiyor (URDF'de RealSense D455'in sadece depth sensörü var, RGB yok — Gün 4 öncesi güncel URDF gelirse gerçek RGB-D füzyona geçilebilir).
+Lidar-öncelikli 2D+3D SLAM: `/scan` ile ICP tabanlı (`Reg/Strategy=1`) occupancy grid, RGB kamera gerektirmiyor. Kurulduğu sırada URDF `camera_link`/RealSense D455/`camera/depth` kullanıyordu; Gün 4'te URDF Zehra'nın branch'i temel alınarak `d435i_link`/RealSense D435i/`/d435i/depth/image_raw`'a geçti ama `gazebo.launch.py`'nin bridge'i henüz güncellenmedi (yukarıdaki **BİLİNEN SORUN** notuna bkz.) — bu yüzden RTAB-Map'in `/camera/depth/points` bağımlılığı, spawn_entity mimarisi düzeltilip yeni URDF gerçekten Gazebo'ya girene kadar risk altında değil, ama sonrasında bridge güncellenmeden çalışmayacak.
 
 Çalıştırma: `gazebo.launch.py` + ayrı terminalde `rtabmap.launch.py`.
 
@@ -164,3 +171,5 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 - Gün 2 (14 Temmuz 2026 - devam) BT node implementasyonu tamamlandı: tulpar_bt paketi, 9 node (6 tam implemente, 3 yazılımsal tamamlandı/donanım+ekip bekliyor), 3 gerçek sorun bulunup çözüldü (colcon paket keşfi, Nav2 çökme riski, Repeat kalıcı ölüm riski).
 - Gün 2 (devam) Emin'in KTR 3.3.1 görevi (telemetri paneli + WebRTC video alıcı) üstlenildi ve tamamlandı, ayrıca Gün 1'den kalma gizli bir preload ESM/CJS bug'ı bulunup düzeltildi.
 - Gün 3 (devam) RTAB-Map SLAM kuruldu ve gerçek Gazebo testiyle doğrulandı (harita oluşumu rviz'de teyit edildi), 4 gerçek altyapı bug'ı bulunup düzeltildi.
+- Gün 4 (16 Temmuz 2026) URDF v3.0: yeni CAD assembly'den (`!!tulpar+ika+assembly.stl`, 16.000 parça) gövde+tekerlek mesh'leri çıkarıldı, decimate edildi, kütle/inertia hesaplandı, URDF tamamen güncellendi (yeni boyutlar, 3 yeni sensör linki). RViz ile görsel doğrulama yapıldı, Gazebo fizik testi mimari eksiklik (spawn_entity yok) nedeniyle YAPILAMADI — ayrı görev olarak bekliyor. Süreçte 3 gerçek hesaplama hatası bulunup düzeltildi: negatif eylemsizlik momenti (winding tutarsızlığı), ön/arka işaret hatası (sensör konumları ters çıkıyordu), ve mesh-türevli inertia'nın üçgen eşitsizliğini ihlal etmesi (analitik kutuya geçildi).
+- Gün 4 (devam) **Strateji pivotu**: mekanik ekip kendi orijinal `tulpar_ika_assembly.stl`'ini Blender'da inceleyip eksiksiz olduğunu doğruladı — sorun bizim decimation pipeline'ımızdaymış. Kendi mesh yaklaşımımızdan (govde/teker v2/v3, 5 dosya) vazgeçildi, silindi. Onun yerine Zehra'nın `feature/zehra-faz1-gun1` branch'indeki `urdf/robot.urdf.xacro` + ham `tulpar_ika_assembly.stl` (149MB) temel alındı, sadece fiziksel parametreler (1200×450×245mm/64kg/780mm/1060mm/200mm + yeniden hesaplanan inertia) mekanik ekipten gelen değerlerle güncellendi. Sensör link isimleri Zehra'nınkiyle birleşti (`d435i_link`, `rear_camera_link`) — kendi placeholder linklerimizden (`d435if_link`, `sjcam_link`) vazgeçildi çünkü Zehra'nınkiler zaten gerçek Gazebo sensor plugin'lerine bağlıydı. Yeni bilinen sorun: `gazebo.launch.py`'nin bridge'i henüz yeni sensör topic isimleriyle güncellenmedi.

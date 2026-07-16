@@ -1,7 +1,7 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, AppendEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
@@ -11,6 +11,13 @@ def generate_launch_description():
     pkg_path = get_package_share_directory("tulpar_description")
     xacro_file = os.path.join(pkg_path, "urdf", "robot.urdf.xacro")
     robot_desc = xacro.process_file(xacro_file).toxml()
+
+    # model:// URI'lerin (mesh vb.) cozulmesi icin gerekli - bu olmadan
+    # Gazebo dunyayi yuklerken meshi bulamaz ve sunucu hemen coker.
+    gz_resource_path = AppendEnvironmentVariable(
+        'GZ_SIM_RESOURCE_PATH',
+        os.path.dirname(pkg_path)
+    )
 
     world_arg = DeclareLaunchArgument(
         'world',
@@ -49,8 +56,15 @@ def generate_launch_description():
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
             "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
             "/camera/depth@sensor_msgs/msg/Image[gz.msgs.Image",
+            "/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+            "/camera/depth/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
+            "/model/tulpar/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
+            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+        ],
+        remappings=[
+            ("/model/tulpar/tf", "/tf"),
         ],
         output="screen"
     )
 
-    return LaunchDescription([world_arg, robot_state_publisher, gazebo, bridge])
+    return LaunchDescription([gz_resource_path, world_arg, robot_state_publisher, gazebo, bridge])

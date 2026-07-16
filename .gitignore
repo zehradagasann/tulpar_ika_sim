@@ -2,3 +2,4 @@ meshes/tulpar.glb
 build/
 install/
 log/
+worlds/*.bak

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a ROS 2 / Gazebo Harmonic simulation package for the **Tulpar IKA** — a 4-wheeled differential-drive ground robot (62 kg, 1200×600×240 mm chassis, Ø330 mm wheels). The package name is `tulpar_description`.
+This is a ROS 2 / Gazebo Harmonic simulation package for the **Tulpar IKA** — a 4-wheeled differential-drive ground robot (64 kg, 1200×450×245 mm chassis, Ø400 mm wheels). The package name is `tulpar_description`.
 
 ## Build & Run
 
@@ -67,11 +67,11 @@ Starts three nodes:
 ### Worlds (`worlds/`)
 | File | Purpose |
 |------|---------|
-| `s01_robotlu_world.sdf` | S-01 terrain course: 10-step staircase ramp (~45% grade), 20% side-slope platform, 15 cm block, 5 cm speed bumps. **Includes robot spawn.** |
-| `s02_hedef_world.sdf` | S-02 target detection: flat ground with A3 target board at 10 m. **Includes robot spawn.** |
-| `e02_duz_world.sdf` | E-02 acceleration: flat 30+ m track with distance markers. **Includes robot spawn.** |
+| `s01_robotlu_world.sdf` | S-01: düz/boş zemin (`ground_plane` only) — terrain elemanları (rampa/yan eğim/blok/tümsek, 61 model) 16 Temmuz 2026'da kaldırıldı, bkz. Test scripts notu ve "S01 terrain temizliği" ilerleme notu. |
+| `s02_hedef_world.sdf` | S-02 target detection: flat ground with A3 target board at 10 m. |
+| `e02_duz_world.sdf` | E-02 acceleration: flat 30+ m track with distance markers. |
 
-All three world files embed the full robot model (converted from URDF) directly in the SDF, so the robot spawns automatically in every world. `launch/gazebo.launch.py` has no spawn mechanism of its own — it only launches Gazebo, bridges topics, and publishes robot_description/TF via `robot_state_publisher`.
+Hiçbir world dosyası artık robotu gömülü içermiyor — robot canlı `urdf/robot.urdf.xacro`'dan `gazebo.launch.py` tarafından spawn ediliyor (bkz. yukarıdaki "MİMARİ EKSİKLİK ÇÖZÜLDÜ" notu).
 
 ### Test scripts (`test_kanit/`)
 Each test is a standalone ROS 2 node that publishes `/cmd_vel` and subscribes `/odom`. Pattern:
@@ -82,7 +82,7 @@ Each test is a standalone ROS 2 node that publishes `/cmd_vel` and subscribes `/
 
 | Directory | Tests |
 |-----------|-------|
-| `S01/` | Ramp stop/brake, side slope, 15 cm block, flat ground, full course |
+| `S01/` | Ramp stop/brake, side slope, 15 cm block, flat ground, full course — **16 Temmuz 2026'dan itibaren GEÇERSİZ**: `s01_robotlu_world.sdf`'den terrain elemanları (rampa/yan eğim/blok/tümsek) kaldırıldı, world artık düz/boş zemin. Bu scriptler artık test ettikleri engelleri bulamaz. Orijinal terrain'li world `worlds/s01_robotlu_world_ORIJINAL_YEDEK.sdf.bak`'ta duruyor, gerekirse geri eklenebilir. |
 | `S02/` | Target detection & lock (geometric simulation using camera FoV math) |
 | `E02/` | 30 m straight-line acceleration at 0.5 m/s |
 
@@ -162,9 +162,10 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 - Güncel detaylı plan: `talha_yol_haritasi_v2.md` (repo dışında, Talha'da duruyor — gerekirse içeriğini iste)
 
 ## Key Physical Parameters
-- Wheel separation: 1.04 m; wheel radius: 0.165 m
-- Max linear velocity: 0.785 m/s; max angular velocity: 7.854 rad/s
-- Max wheel torque: 50 Nm (in SDF world); 21.6 Nm (in URDF plugin — SDF takes precedence when robot is embedded in world)
+(`urdf/robot.urdf.xacro`'daki `DiffDrive` plugin'inden doğrulandı, 16 Temmuz 2026 — Zehra'nın orijinal değerleri, henüz mekanik/motor ekibiyle netleştirilmedi)
+- Wheel separation: 1.06 m; wheel radius: 0.200 m
+- Max linear velocity: 1.0 m/s; max angular velocity: 3.0 rad/s
+- Max wheel torque: 25.0 Nm; max linear acceleration: 2.0 m/s²
 - Physics: ODE solver, 1 ms step, 1000 Hz update rate, 100 iterations
 
 ## Gün Bazlı İlerleme Notları
@@ -176,3 +177,5 @@ Bilinen sorun: bazı Linux ortamlarında Electron sandbox izin hatası çıkabil
 - Gün 4 (16 Temmuz 2026) URDF v3.0: yeni CAD assembly'den (`!!tulpar+ika+assembly.stl`, 16.000 parça) gövde+tekerlek mesh'leri çıkarıldı, decimate edildi, kütle/inertia hesaplandı, URDF tamamen güncellendi (yeni boyutlar, 3 yeni sensör linki). RViz ile görsel doğrulama yapıldı, Gazebo fizik testi mimari eksiklik (spawn_entity yok) nedeniyle YAPILAMADI — ayrı görev olarak bekliyor. Süreçte 3 gerçek hesaplama hatası bulunup düzeltildi: negatif eylemsizlik momenti (winding tutarsızlığı), ön/arka işaret hatası (sensör konumları ters çıkıyordu), ve mesh-türevli inertia'nın üçgen eşitsizliğini ihlal etmesi (analitik kutuya geçildi).
 - Gün 4 (devam) **Strateji pivotu**: mekanik ekip kendi orijinal `tulpar_ika_assembly.stl`'ini Blender'da inceleyip eksiksiz olduğunu doğruladı — sorun bizim decimation pipeline'ımızdaymış. Kendi mesh yaklaşımımızdan (govde/teker v2/v3, 5 dosya) vazgeçildi, silindi. Onun yerine Zehra'nın `feature/zehra-faz1-gun1` branch'indeki `urdf/robot.urdf.xacro` + ham `tulpar_ika_assembly.stl` (149MB) temel alındı, sadece fiziksel parametreler (1200×450×245mm/64kg/780mm/1060mm/200mm + yeniden hesaplanan inertia) mekanik ekipten gelen değerlerle güncellendi. Sensör link isimleri Zehra'nınkiyle birleşti (`d435i_link`, `rear_camera_link`) — kendi placeholder linklerimizden (`d435if_link`, `sjcam_link`) vazgeçildi çünkü Zehra'nınkiler zaten gerçek Gazebo sensor plugin'lerine bağlıydı. Yeni bilinen sorun: `gazebo.launch.py`'nin bridge'i henüz yeni sensör topic isimleriyle güncellenmedi.
 - Gün 4 (devam) **Spawn mimarisi eksikliği kapatıldı**: `worlds/*.sdf`'lerdeki statik gömülü `tulpar` modeli kaldırıldı, `gazebo.launch.py`'ye `ros_gz_sim create` ile canlı-URDF-spawn eklendi. S01 gerçek Gazebo testiyle doğrulandı (ekran görüntüsü alındı); S02/E02 aynı düzeltmeyi aldı ama test edilmedi. Süreçte gerçek bir stale-process bug'ı bulundu ve not düşüldü (birden fazla `robot_state_publisher` aynı `/robot_description` topic'ine yayın yapınca `create` yanlış/eski olanı yakalayabiliyor). Bridge topic uyumsuzluğu artık teorik değil aktif bir sorun — Gazebo gerçekten yeni URDF'yi simüle ettiği için kamera topic'leri muhtemelen akmıyor, ayrı görev olarak açık kaldı.
+- Gün 4 (devam) **Kapsamlı denetim + düzeltmeler**: Repo geneli denetlendi, 3 kritik/1 önemli bulgu tespit edilip düzeltildi — CLAUDE.md'nin Worlds bölümü spawn mimarisi notuyla çelişiyordu (eski/statik anlatım silindi), Overview ve Key Physical Parameters bölümleri aylardır güncellenmemiş eski değerler taşıyordu (64kg/1200×450×245mm/Ø400mm ve gerçek DiffDrive değerleriyle güncellendi), `package.xml`'de `xacro` bağımlılığı eksikti (eklendi), `meshes/tulpar_yeni.stl` (61MB, düz git blob) artık hiçbir yerden referans edilmiyordu (silindi).
+- Gün 4 (devam) **S01 terrain temizliği**: `worlds/s01_robotlu_world.sdf`'deki 61 terrain modeli (rampa_asc/desc ×20+20, rampa_tepe, yan_giris/cikis/egim ×10, blok_giris/15cm ×4, tumsek ×6) kaldırıldı, world artık sadece `ground_plane` içeriyor. Silmeden önce `worlds/s01_robotlu_world_ORIJINAL_YEDEK.sdf.bak` yedeği alındı (`.gitignore`'a eklendi, repoya commit edilmiyor). **Sonuç: `test_kanit/S01/` scriptleri artık geçersiz** (test ettikleri rampa/blok/tümsek engelleri artık world'de yok) — bkz. Test scripts notu. Gazebo testiyle doğrulandı: araç boş düz zeminde doğru görünüyor.

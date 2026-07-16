@@ -59,10 +59,10 @@ Starts three nodes:
 | File | Purpose |
 |------|---------|
 | `s01_robotlu_world.sdf` | S-01 terrain course: 10-step staircase ramp (~45% grade), 20% side-slope platform, 15 cm block, 5 cm speed bumps. **Includes robot spawn.** |
-| `s02_hedef_world.sdf` | S-02 target detection: flat ground with A3 target board at 10 m |
-| `e02_duz_world.sdf` | E-02 acceleration: flat 30+ m track with distance markers |
+| `s02_hedef_world.sdf` | S-02 target detection: flat ground with A3 target board at 10 m. **Includes robot spawn.** |
+| `e02_duz_world.sdf` | E-02 acceleration: flat 30+ m track with distance markers. **Includes robot spawn.** |
 
-`s01_robotlu_world.sdf` embeds the full robot model (converted from URDF) so the robot spawns automatically. The other worlds require the robot to be spawned separately via the launch file.
+All three world files embed the full robot model (converted from URDF) directly in the SDF, so the robot spawns automatically in every world. `launch/gazebo.launch.py` has no spawn mechanism of its own — it only launches Gazebo, bridges topics, and publishes robot_description/TF via `robot_state_publisher`.
 
 ### Test scripts (`test_kanit/`)
 Each test is a standalone ROS 2 node that publishes `/cmd_vel` and subscribes `/odom`. Pattern:

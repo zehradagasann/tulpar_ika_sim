@@ -31,7 +31,7 @@
     <visual>
       <origin xyz="0.600 -0.300 0.110" rpy="0 0 1.5708"/>
       <geometry>
-        <mesh filename="package://tulpar_description/meshes/tulpar_ika_assembly.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://tulpar_description/meshes/tulpar_ika_assembly_tekersiz.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminium"/>
     </visual>
@@ -263,7 +263,9 @@
   <gazebo reference="d435i_link">
     <sensor name="d435i_depth" type="depth_camera">
       <update_rate>10</update_rate>
-      <topic>/d435i/depth/image_raw</topic>
+      <!-- Zehra'nin dogruladigi calisan topic adi: d435if (link adi d435i_link
+           kaliyor, sadece topic ismi hedef donanim adiyla (D435if) eslesiyor) -->
+      <topic>/d435if/depth/image_raw</topic>
       <camera>
         <horizontal_fov>1.5184</horizontal_fov>
         <image>

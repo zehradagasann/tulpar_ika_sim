@@ -111,7 +111,7 @@
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
-  <link name="d435i_link">
+  <link name="d435if_link">
     <visual>
       <geometry>
         <box size="0.09 0.025 0.025"/>
@@ -124,37 +124,37 @@
     </inertial>
   </link>
 
-  <joint name="d435i_joint" type="fixed">
+  <joint name="d435if_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="d435i_link"/>
+    <child link="d435if_link"/>
     <origin xyz="0.62 0.0 0.20" rpy="0 0 0"/>
   </joint>
 
-  <link name="d435i_color_frame"/>
-  <joint name="d435i_color_joint" type="fixed">
-    <parent link="d435i_link"/>
-    <child link="d435i_color_frame"/>
+  <link name="d435if_color_frame"/>
+  <joint name="d435if_color_joint" type="fixed">
+    <parent link="d435if_link"/>
+    <child link="d435if_color_frame"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
-  <link name="d435i_color_optical_frame"/>
-  <joint name="d435i_color_optical_joint" type="fixed">
-    <parent link="d435i_color_frame"/>
-    <child link="d435i_color_optical_frame"/>
+  <link name="d435if_color_optical_frame"/>
+  <joint name="d435if_color_optical_joint" type="fixed">
+    <parent link="d435if_color_frame"/>
+    <child link="d435if_color_optical_frame"/>
     <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
   </joint>
 
-  <link name="d435i_depth_frame"/>
-  <joint name="d435i_depth_joint" type="fixed">
-    <parent link="d435i_link"/>
-    <child link="d435i_depth_frame"/>
+  <link name="d435if_depth_frame"/>
+  <joint name="d435if_depth_joint" type="fixed">
+    <parent link="d435if_link"/>
+    <child link="d435if_depth_frame"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
-  <link name="d435i_depth_optical_frame"/>
-  <joint name="d435i_depth_optical_joint" type="fixed">
-    <parent link="d435i_depth_frame"/>
-    <child link="d435i_depth_optical_frame"/>
+  <link name="d435if_depth_optical_frame"/>
+  <joint name="d435if_depth_optical_joint" type="fixed">
+    <parent link="d435if_depth_frame"/>
+    <child link="d435if_depth_optical_frame"/>
     <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
   </joint>
 
@@ -260,11 +260,9 @@
     </sensor>
   </gazebo>
 
-  <gazebo reference="d435i_link">
-    <sensor name="d435i_depth" type="depth_camera">
+  <gazebo reference="d435if_link">
+    <sensor name="d435if_depth" type="depth_camera">
       <update_rate>10</update_rate>
-      <!-- Zehra'nin dogruladigi calisan topic adi: d435if (link adi d435i_link
-           kaliyor, sadece topic ismi hedef donanim adiyla (D435if) eslesiyor) -->
       <topic>/d435if/depth/image_raw</topic>
       <camera>
         <horizontal_fov>1.5184</horizontal_fov>

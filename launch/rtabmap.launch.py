@@ -16,7 +16,7 @@ from launch_ros.actions import Node
 #
 # frame_id/odom_frame_id, gazebo.launch.py'deki DiffDrive plugin'inin
 # (frame_id=odom, child_frame_id=base_footprint) ve URDF TF agacinin
-# (base_footprint->base_link->lidar_link/d435i_link) birebir esidir.
+# (base_footprint->base_link->lidar_link/d435if_link) birebir esidir.
 
 
 def generate_launch_description():

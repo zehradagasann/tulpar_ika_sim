@@ -20,6 +20,7 @@ find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(tulpar_ika_msgs REQUIRED)
 
 include_directories(include)
 
@@ -46,6 +47,7 @@ ament_target_dependencies(tulpar_bt_nodes
   std_srvs
   geometry_msgs
   nav_msgs
+  tulpar_ika_msgs
 )
 
 add_executable(bt_executor src/bt_executor_main.cpp)

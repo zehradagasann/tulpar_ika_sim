@@ -5,9 +5,7 @@ package_name = 'tulpar_ika_perception'
 setup(
     name=package_name,
     version='0.1.0',
-
     packages=find_packages(exclude=['test']),
-
     data_files=[
         (
             'share/ament_index/resource_index/packages',
@@ -22,19 +20,14 @@ setup(
             ['config/class_registry.yaml'],
         ),
     ],
-
     install_requires=['setuptools'],
     zip_safe=True,
-
     maintainer='zehra',
     maintainer_email='zehradagasan09@gmail.com',
-
     description=(
         'TULPAR İKA algılama ve görüntü işleme düğümleri.'
     ),
-
     license='Apache-2.0',
-
     entry_points={
         'console_scripts': [
             (
@@ -56,6 +49,11 @@ setup(
                 'slalom_debug = '
                 'tulpar_ika_perception.'
                 'slalom_debug:main'
+            ),
+            (
+                'terrain_speed_node = '
+                'tulpar_ika_perception.'
+                'terrain_speed_node:main'
             ),
         ],
     },

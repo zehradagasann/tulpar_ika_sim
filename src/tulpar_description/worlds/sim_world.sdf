@@ -74,6 +74,35 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.3500 0.2500 0.1500 1</ambient>
+            <diffuse>0.3500 0.2500 0.1500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="bariyer">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/bariyer.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/bariyer.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.7500 0.0500 0.0500 1</ambient>
+            <diffuse>0.7500 0.0500 0.0500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -93,6 +122,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.3255 0.2157 0.0000 1</ambient>
+            <diffuse>0.3255 0.2157 0.0000 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -112,6 +146,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.4118 0.4118 0.4118 1</ambient>
+            <diffuse>0.4118 0.4118 0.4118 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -131,6 +170,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.4118 0.4118 0.4118 1</ambient>
+            <diffuse>0.4118 0.4118 0.4118 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -150,6 +194,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.4118 0.4118 0.4118 1</ambient>
+            <diffuse>0.4118 0.4118 0.4118 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -169,6 +218,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.5000 0.4800 0.4500 1</ambient>
+            <diffuse>0.5000 0.4800 0.4500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -188,6 +242,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.6118 0.6588 0.6706 1</ambient>
+            <diffuse>0.6118 0.6588 0.6706 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -207,6 +266,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.7451 0.7451 0.7451 1</ambient>
+            <diffuse>0.7451 0.7451 0.7451 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -218,6 +282,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>1.0000 1.0000 1.0000 1</ambient>
+            <diffuse>1.0000 1.0000 1.0000 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -229,6 +298,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.8118 0.3098 0.0000 1</ambient>
+            <diffuse>0.8118 0.3098 0.0000 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
 
@@ -240,6 +314,11 @@
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
+        <material>
+            <ambient>0.8500 0.8500 0.8500 1</ambient>
+            <diffuse>0.8500 0.8500 0.8500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
         </visual>
       </link>
     </model>

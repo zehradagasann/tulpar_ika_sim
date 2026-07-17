@@ -1,0 +1,40 @@
+sign_classes:
+  0:
+    name: stage_01
+    action: ACTION_UNKNOWN
+  1:
+    name: stage_02
+    action: ACTION_UNKNOWN
+  2:
+    name: stage_03
+    action: ACTION_UNKNOWN
+  3:
+    name: stage_04
+    action: ACTION_UNKNOWN
+  4:
+    name: stage_05
+    action: ACTION_UNKNOWN
+  5:
+    name: stage_06
+    action: ACTION_UNKNOWN
+  6:
+    name: stage_07
+    action: ACTION_UNKNOWN
+  7:
+    name: stage_08
+    action: ACTION_UNKNOWN
+  8:
+    name: stage_09
+    action: ACTION_UNKNOWN
+  9:
+    name: stage_10
+    action: ACTION_UNKNOWN
+  10:
+    name: stage_11
+    action: ACTION_UNKNOWN
+  11:
+    name: stage_12
+    action: ACTION_ENTER_SHOOTING_ZONE
+  12:
+    name: stop_marking
+    action: ACTION_STOP

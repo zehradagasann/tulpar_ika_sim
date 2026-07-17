@@ -17,6 +17,10 @@ setup(
             'share/' + package_name,
             ['package.xml'],
         ),
+        (
+            'share/' + package_name + '/config',
+            ['config/class_registry.yaml'],
+        ),
     ],
 
     install_requires=['setuptools'],
@@ -47,6 +51,11 @@ setup(
                 'image_preprocessor = '
                 'tulpar_ika_perception.'
                 'image_preprocessor:main'
+            ),
+            (
+                'slalom_debug = '
+                'tulpar_ika_perception.'
+                'slalom_debug:main'
             ),
         ],
     },

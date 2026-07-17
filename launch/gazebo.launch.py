@@ -27,7 +27,7 @@ def generate_launch_description():
     world_arg = DeclareLaunchArgument(
         'world',
         default_value=os.path.join(
-            get_package_share_directory('tulpar_description'), 'worlds', 's01_robotlu_world.sdf'
+            get_package_share_directory('tulpar_description'), 'worlds', 'sim_world.sdf'
         ),
         description='Gazebo world SDF path'
     )

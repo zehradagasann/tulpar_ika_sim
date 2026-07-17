@@ -77,6 +77,25 @@
         </visual>
       </link>
 
+      <link name="bariyer">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/bariyer.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/bariyer.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+
       <link name="yol">
         <collision name="collision">
           <geometry>

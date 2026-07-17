@@ -1,25 +1,30 @@
+# Slalom Algorithm Notes
+
 ## Amaç
-  Koni çiftlerinden geçiş için orta hedef nokta üretmek.
+Koni çiftlerinden geçiş için orta hedef nokta üretmek.
 
-  ## Girdi
-  - Sol koniler
-  - Sağ koniler
-  - Her koni için görüntü merkezi veya 2D konum bilgisi
+## Girdi
+- Ham koni algısı: `/detections` (`Detection2DArray`)
+- Her koni için görüntü merkezi (`center_px`) ve varsa `depth_m`
 
-  ## Adımlar
-  1. Konileri sol ve sağ diye ayır
-  2. Yakın sol-sağ konileri eşleştir
-  3. Her eşleşme için orta nokta hesapla
-  4. En uygun orta noktayı hedef seç
-  5. Hedefe göre yön bilgisi üret
-  6. Hedef uzaklığına göre hız seviyesi üret
+## İş Akışı
+1. Ham koni algısını al
+2. Derinlik ve TF ile konileri `odom` frame'ine taşı
+3. İşlenmiş koni merkezlerini `/parkur/koni_tespitleri` (`PoseArray`) olarak üret
+4. Sol-sağ koni çiftlerinden orta hedef noktayı hesapla
+5. Slalom hedefini `/tulpar_bt/hedef_pose` (`PoseStamped`) olarak yayınla
 
-  ## Geçici Çıkışlar
-  - target_point_x
-  - target_point_y
-  - turn_direction
-  - speed_level
+## Kararlaştırılan Format
+- Koni işlenmiş çıkışı:
+  - topic: `/parkur/koni_tespitleri`
+  - mesaj: `geometry_msgs/msg/PoseArray`
+  - frame: `odom`
+- Slalom hedef çıkışı:
+  - topic: `/tulpar_bt/hedef_pose`
+  - mesaj: `geometry_msgs/msg/PoseStamped`
 
-  ## Açık Konular
-  - Navigation tarafı obstacle mı waypoint mi corridor mu bekliyor?
-  - ROS mesajı hangi formatta olacak?
+## Notlar
+- `turn_direction` ayrı topic olarak taşınmayacak.
+- `speed_level` şimdilik taşınmayacak.
+- Ham detection ile navigation çıktısı ayrı tutulacak.
+- TEB/costmap obstacle hattı Talha tarafında ayrı görev olarak ilerleyecek.

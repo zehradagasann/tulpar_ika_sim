@@ -22,9 +22,11 @@
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link"/>
-    <!-- z=0.200: yeni tekerlek yaricapi ile tutarli (base_link tekerlek
-         ekseni hizasinda olmali) -->
-    <origin xyz="0 0 0.200" rpy="0 0 0"/>
+    <!-- z=0.166: gercek tekerlek yaricapi (govde mesh'inden - tulpar_ika_assembly.stl
+         icindeki gomulu eski tekerlek geometrisinin olcumu, bkz. "cifte tekerlek"
+         notu - 0.200 degeri Zehra'nin dogrulanmamis DiffDrive degeriydi, govde
+         ile orantisiz gorunuyordu, 17 Temmuz'da duzeltildi) -->
+    <origin xyz="0 0 0.166" rpy="0 0 0"/>
   </joint>
 
   <link name="base_link">
@@ -56,13 +58,13 @@
     <link name="${name}">
       <visual>
         <geometry>
-          <cylinder radius="0.200" length="0.12"/>
+          <cylinder radius="0.166" length="0.12"/>
         </geometry>
         <material name="black"/>
       </visual>
       <collision>
         <geometry>
-          <cylinder radius="0.200" length="0.12"/>
+          <cylinder radius="0.166" length="0.12"/>
         </geometry>
       </collision>
       <inertial>
@@ -223,7 +225,7 @@
       <right_joint>joint_wheel_fr</right_joint>
       <right_joint>joint_wheel_rr</right_joint>
       <wheel_separation>1.06</wheel_separation>
-      <wheel_radius>0.200</wheel_radius>
+      <wheel_radius>0.166</wheel_radius>
       <max_linear_velocity>1.0</max_linear_velocity>
       <max_angular_velocity>3.0</max_angular_velocity>
       <max_wheel_torque>25.0</max_wheel_torque>

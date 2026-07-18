@@ -58,7 +58,7 @@ def generate_launch_description():
             )
         ]),
         launch_arguments={
-            "gz_args": ["-r --render-engine ogre ", world]
+            "gz_args": ["-r --render-engine ogre2 ", world]
         }.items()
     )
 
@@ -107,7 +107,35 @@ def generate_launch_description():
         output="screen"
     )
 
+    # ÇÖZÜLDÜ (18 Temmuz 2026) — Gazebo'nun render-tabanli sensorleri (gpu_lidar,
+    # depth_camera) LaserScan/Image/CameraInfo mesajlarinin frame_id'sine URDF'nin
+    # gercek link ismini degil, kendi ic scoped-entity ismini (<model>/<kok_link>/
+    # <sensor_adi>, orn. "tulpar/base_footprint/ydlidar_tg30") yaziyor - bu isim
+    # robot_state_publisher'in yayinladigi TF agacinda hic yok, bu yuzden RTAB-Map
+    # (ve muhtemelen tulpar_obstacle_injector) "frame does not exist" hatasi veriyor.
+    # SDF'de bunu duzeltecek bir <frame_id> elemani yok (sadece kamera icin
+    # optical_frame_id var, bu ham sensor frame'ini kapsamiyor) - statik (sifir
+    # offsetli) TF alias'lariyla gercek URDF frame'lerine baglaniyor.
+    sensor_frame_aliases = [
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "lidar_link", "tulpar/base_footprint/ydlidar_tg30"],
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "d435if_depth_optical_frame", "tulpar/base_footprint/d435if_depth"],
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "rear_camera_optical_frame", "tulpar/base_footprint/rear_camera"],
+        ),
+    ]
+
     return LaunchDescription([
         gz_resource_path, world_arg, spawn_delay_arg,
         robot_state_publisher, gazebo, spawn_robot, bridge,
+        *sensor_frame_aliases,
     ])

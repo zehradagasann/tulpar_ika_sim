@@ -17,6 +17,10 @@
     <color rgba="0.3 0.3 0.3 1.0"/>
   </material>
 
+  <material name="debug_red">
+    <color rgba="1.0 0.0 0.0 1.0"/>
+  </material>
+
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
@@ -75,10 +79,18 @@
     </joint>
   </xacro:macro>
 
-  <xacro:wheel name="wheel_fl" x="0.4" y="0.58"/>
-  <xacro:wheel name="wheel_rl" x="-0.4" y="0.58"/>
-  <xacro:wheel name="wheel_fr" x="0.4" y="-0.58"/>
-  <xacro:wheel name="wheel_rr" x="-0.4" y="-0.58"/>
+  <!-- 18 Temmuz 2026: govde mesh'indeki 4 gomulu gercek tekerlek konumu (trimesh
+       ile bulunan 16 parcalik tekerlek imzasi, her tekerlegin tam bounds ortasi)
+       base_link'e donusturuldu - eski (0.4,0.58) degerine gore iz genisligi
+       1.16m yerine 1.056m cikiyor (CLAUDE.md'nin daha once kaydettigi 1.06m
+       degeriyle tutarli). Wheel_separation/wheel_radius DiffDrive plugin'inde
+       hala eski (1.16/0.20) degerlerde - bu ayri, bilinen bir tartisma konusu
+       (bkz. CLAUDE.md), burada sadece GORSEL konum duzeltildi, fizik parametreleri
+       degistirilmedi. -->
+  <xacro:wheel name="wheel_fl" x="0.39" y="0.528"/>
+  <xacro:wheel name="wheel_rl" x="-0.39" y="0.528"/>
+  <xacro:wheel name="wheel_fr" x="0.39" y="-0.528"/>
+  <xacro:wheel name="wheel_rr" x="-0.39" y="-0.528"/>
 
   <link name="lidar_link">
     <visual>
@@ -96,7 +108,12 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="lidar_link"/>
-    <origin xyz="0.58 -0.015 0.61" rpy="0 0 0"/>
+    <!-- 18 Temmuz 2026: ilk tahmin (0.39,0.055,0.36) disliyle ayni merkezdeki
+         disliye ait goze (hub) isaret ediyordu, yanlisti. Kullanicinin tarif
+         ettigi "disliye gore onde/solda, alcakta" konumuna gore ikinci aday
+         denendi - trimesh raw koordinati ~(180,70,266)mm. Henuz gorsel teyit
+         edilmedi, iterasyon devam ediyor. -->
+    <origin xyz="0.522 -0.045 0.376" rpy="0 0 0"/>
   </joint>
 
   <link name="laser_frame"/>
@@ -123,7 +140,14 @@
   <joint name="d435if_joint" type="fixed">
     <parent link="base_link"/>
     <child link="d435if_link"/>
-    <origin xyz="0.58 0.0 0.53" rpy="0 0 0"/>
+    <!-- 18 Temmuz 2026: govde mesh'inde sasi onunde, yuksek detayli (67900 face)
+         120x10x17mm'lik bir cubuk sekli bulundu (raw ~232.9,-19.0,219.8mm) -
+         gercek Intel RealSense modeli olarak yorumlandi. Eski konum (0.58,0,0.53)
+         0.2m fazla yukarida duruyordu. Mesh'teki cubugun uzun ekseni raw-X
+         yonunde, bu da donusumden sonra base_link'in Y (yanal) eksenine denk
+         geliyor - kutumuzun uzun ekseni varsayilan olarak X (ileri) oldugu icin
+         yaw 90 derece dondurulerek gercek yonelime hizalandi. -->
+    <origin xyz="0.611 0.008 0.33" rpy="0 0 1.5708"/>
   </joint>
 
   <link name="d435if_color_frame"/>
@@ -179,7 +203,13 @@
   <joint name="rpi_hq_camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="rpi_hq_camera_link"/>
-    <origin xyz="0.58 -0.03 0.58" rpy="0 0 0"/>
+    <!-- 18 Temmuz 2026: govde mesh'inde taret/gimbal alaninda, 138mm uzunlugunda
+         teleskopik bir tup/skop sekli bulundu (raw ~286.8,169.0,306.8mm,
+         faces=3620) - 16mm telefoto lensli atis/nisan kamerasi olarak
+         yorumlandi, uzun ekseni zaten ileri (X) yonunde. Eski konum
+         (0.58,-0.03,0.58) 0.16m ileride + 0.16m yukarida duruyordu. Gorsel
+         teyit bekliyor. -->
+    <origin xyz="0.423 0.062 0.417" rpy="0 0 0"/>
   </joint>
 
   <link name="rpi_hq_camera_optical_frame"/>
@@ -206,7 +236,13 @@
   <joint name="rear_camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="rear_camera_link"/>
-    <origin xyz="-0.58 0.0 0.28" rpy="0 0 3.14159"/>
+    <!-- 18 Temmuz 2026: govde mesh'inde sasi arkasinda, yuksek detayli (11224 face)
+         47x18x41mm'lik bir kutu bulundu (raw ~223.5,1173.5,276.9mm) - z 0.28'den
+         0.387'ye duzeltildi. "6cm one" denemesi kullanici tarafindan yanlis
+         yon olarak isaretlendi, x=-0.58'e geri alindi. Tam doğru konum icin
+         mesh'te daha iyi bir referans bulunamadi - kullanicidan net koordinat/
+         foto bekleniyor, ayri bir gorev olarak birakildi. -->
+    <origin xyz="-0.58 0.0 0.387" rpy="0 0 3.14159"/>
   </joint>
 
   <link name="rear_camera_optical_frame"/>
@@ -214,6 +250,55 @@
     <parent link="rear_camera_link"/>
     <child link="rear_camera_optical_frame"/>
     <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+  </joint>
+
+  <!-- GNSS anten (ZED-F9P RTK, roadmap Gun 7). 18 Temmuz 2026: govde mesh'inde
+       "test cubugu" sanilan 617mm'lik ince direk (comp4592, raw x~50,y~1150,
+       z 241.5-858.5mm) aslinda bir anten diregi olarak yeniden yorumlandi -
+       kullanicinin "anten eksik" demesiyle tutarli, silinmedi. Anten linki
+       direğin tepesine (raw z=858.5mm) eklendi. -->
+  <link name="gnss_antenna_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.025" length="0.02"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="gnss_antenna_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="gnss_antenna_link"/>
+    <!-- raw direk ucu (~50,1150,858.5mm) base_link'e donusturuldu. -->
+    <origin xyz="-0.558 -0.175 0.9685" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Atis/nisan lazeri (roadmap: "servo+lazer diyot", izinli-atesleme role
+       node'u). 18 Temmuz 2026: mesh'te ayri, belirgin bir lazer-diyot sekli
+       bulunamadi (muhtemelen gercek tasarimda skopla ayni govdede/paralel) -
+       rpi_hq_camera'nin (skop) hemen yanina, boresight hizali placeholder
+       olarak eklendi. Gercek konum mekanik ekipten netlesince guncellenmeli. -->
+  <link name="aim_laser_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.008" length="0.05"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <mass value="0.02"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="aim_laser_joint" type="fixed">
+    <parent link="rpi_hq_camera_link"/>
+    <child link="aim_laser_link"/>
+    <origin xyz="0 0.04 0" rpy="0 1.5708 0"/>
   </joint>
 
   <gazebo>

@@ -3,3 +3,4 @@ build/
 install/
 log/
 worlds/*.bak
+__pycache__/

@@ -18,6 +18,8 @@ STAGE_INFO = {
     "stage_11":    ("hizlanma_baslangic",  "fast",   "acceleration_mode"),
     "stage_12":    ("hizlanma_bitis",      "stop",   "braking_mode"),
     "stop_marking": ("stop_cizgisi",       "stop",   "stop_required"),
+    "shooting_target": ("atis_hedefi",     "stop",   "shooting_mode"),
+    "traffic_cone":  ("trafik_konisi",     "medium", "slalom_mode"),
 }
 
 DEFAULT_INFO = ("bilinmeyen", "medium", "none")

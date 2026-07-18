@@ -22,54 +22,47 @@
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link"/>
-    <!-- z=0.166: gercek tekerlek yaricapi (govde mesh'inden - tulpar_ika_assembly.stl
-         icindeki gomulu eski tekerlek geometrisinin olcumu, bkz. "cifte tekerlek"
-         notu - 0.200 degeri Zehra'nin dogrulanmamis DiffDrive degeriydi, govde
-         ile orantisiz gorunuyordu, 17 Temmuz'da duzeltildi) -->
-    <origin xyz="0 0 0.166" rpy="0 0 0"/>
+    <origin xyz="0 0 0.200" rpy="0 0 0"/>
   </joint>
 
   <link name="base_link">
     <visual>
-      <origin xyz="0.600 -0.300 0.110" rpy="0 0 1.5708"/>
+      <origin xyz="0.592 -0.225 0.110" rpy="0 0 1.5708"/>
       <geometry>
-        <mesh filename="package://tulpar_description/meshes/tulpar_ika_assembly_tekersiz.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://tulpar_description/meshes/tulpar_govde_final.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminium"/>
     </visual>
     <collision>
-      <!-- z=0.187: gercek (transform uygulanmis) mesh bbox merkezinden turetilen
-           deger, ADIM2/URDF v3.0 calismasindan korunuyor -->
-      <origin xyz="0 0 0.187" rpy="0 0 0"/>
+      <origin xyz="0 0 0.1925" rpy="0 0 0"/>
       <geometry>
-        <box size="1.200 0.450 0.245"/>
+        <box size="1.150 1.207 0.615"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="64.0"/>
+      <mass value="65.0"/>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <!-- Analitik kutu (1.2x0.45x0.245m, 64.0kg) - fiziksel olarak garantili
-           gecerli (ucgen esitsizligi tam saglaniyor) -->
-      <inertia ixx="1.4001" ixy="0.0" ixz="0.0" iyy="8.0001" iyz="0.0" izz="8.7600"/>
+      <inertia ixx="9.94" ixy="0.0" ixz="0.0" iyy="9.21" iyz="0.0" izz="15.06"/>
     </inertial>
   </link>
 
   <xacro:macro name="wheel" params="name x y">
     <link name="${name}">
       <visual>
-        <geometry>
-          <cylinder radius="0.166" length="0.12"/>
-        </geometry>
-        <material name="black"/>
-      </visual>
+    <geometry>
+      <cylinder radius="0.10" length="0.125"/>
+    </geometry>
+    <material name="aluminium"/>
+  </visual>
+
       <collision>
         <geometry>
-          <cylinder radius="0.166" length="0.12"/>
+          <cylinder radius="0.20" length="0.12"/>
         </geometry>
       </collision>
       <inertial>
         <mass value="3.5"/>
-        <inertia ixx="0.024" ixy="0" ixz="0" iyy="0.024" iyz="0" izz="0.048"/>
+        <inertia ixx="0.039" ixy="0" ixz="0" iyy="0.039" iyz="0" izz="0.070"/>
       </inertial>
     </link>
 
@@ -82,10 +75,10 @@
     </joint>
   </xacro:macro>
 
-  <xacro:wheel name="wheel_fl" x="0.39" y="0.53"/>
-  <xacro:wheel name="wheel_rl" x="-0.39" y="0.53"/>
-  <xacro:wheel name="wheel_fr" x="0.39" y="-0.53"/>
-  <xacro:wheel name="wheel_rr" x="-0.39" y="-0.53"/>
+  <xacro:wheel name="wheel_fl" x="0.4" y="0.58"/>
+  <xacro:wheel name="wheel_rl" x="-0.4" y="0.58"/>
+  <xacro:wheel name="wheel_fr" x="0.4" y="-0.58"/>
+  <xacro:wheel name="wheel_rr" x="-0.4" y="-0.58"/>
 
   <link name="lidar_link">
     <visual>
@@ -113,6 +106,7 @@
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
+  <!-- Intel RealSense D435if depth camera. -->
   <link name="d435if_link">
     <visual>
       <geometry>
@@ -160,16 +154,25 @@
     <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
   </joint>
 
+  <!-- Raspberry Pi HQ camera with 16 mm telephoto lens (atis kamerasi). -->
   <link name="rpi_hq_camera_link">
     <visual>
+      <origin xyz="-0.008 0 0" rpy="0 0 0"/>
       <geometry>
         <box size="0.038 0.038 0.018"/>
       </geometry>
       <material name="sensor_gray"/>
     </visual>
+    <visual>
+      <origin xyz="0.020 0 0" rpy="0 1.5708 0"/>
+      <geometry>
+        <cylinder radius="0.018" length="0.040"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
     <inertial>
-      <mass value="0.05"/>
-      <inertia ixx="0.0004" ixy="0" ixz="0" iyy="0.0004" iyz="0" izz="0.0004"/>
+      <mass value="0.09"/>
+      <inertia ixx="0.0008" ixy="0" ixz="0" iyy="0.0008" iyz="0" izz="0.0005"/>
     </inertial>
   </link>
 
@@ -186,16 +189,17 @@
     <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
   </joint>
 
+  <!-- Rear camera: SJCAM SJ4000 action camera. -->
   <link name="rear_camera_link">
     <visual>
       <geometry>
-        <box size="0.06 0.03 0.03"/>
+        <box size="0.059 0.041 0.029"/>
       </geometry>
       <material name="sensor_gray"/>
     </visual>
     <inertial>
-      <mass value="0.07"/>
-      <inertia ixx="0.0008" ixy="0" ixz="0" iyy="0.0008" iyz="0" izz="0.0008"/>
+      <mass value="0.058"/>
+      <inertia ixx="0.0006" ixy="0" ixz="0" iyy="0.0006" iyz="0" izz="0.0006"/>
     </inertial>
   </link>
 
@@ -224,8 +228,8 @@
       <left_joint>joint_wheel_rl</left_joint>
       <right_joint>joint_wheel_fr</right_joint>
       <right_joint>joint_wheel_rr</right_joint>
-      <wheel_separation>1.06</wheel_separation>
-      <wheel_radius>0.166</wheel_radius>
+      <wheel_separation>1.16</wheel_separation>
+      <wheel_radius>0.20</wheel_radius>
       <max_linear_velocity>1.0</max_linear_velocity>
       <max_angular_velocity>3.0</max_angular_velocity>
       <max_wheel_torque>25.0</max_wheel_torque>
@@ -240,12 +244,12 @@
 
   <gazebo reference="lidar_link">
     <sensor name="ydlidar_tg30" type="gpu_lidar">
-      <update_rate>5</update_rate>
+     <update_rate>2</update_rate>
       <topic>/scan</topic>
       <lidar>
         <scan>
           <horizontal>
-            <samples>720</samples>
+            <samples>360</samples>
             <resolution>1</resolution>
             <min_angle>-3.14159</min_angle>
             <max_angle>3.14159</max_angle>
@@ -264,13 +268,14 @@
 
   <gazebo reference="d435if_link">
     <sensor name="d435if_depth" type="depth_camera">
-      <update_rate>10</update_rate>
+    <update_rate>2</update_rate>
+
       <topic>/d435if/depth/image_raw</topic>
       <camera>
         <horizontal_fov>1.5184</horizontal_fov>
-        <image>
-          <width>640</width>
-          <height>480</height>
+       <image>
+      <width>320</width>
+      <height>240</height>
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -285,13 +290,14 @@
 
   <gazebo reference="rpi_hq_camera_link">
     <sensor name="rpi_hq_camera" type="camera">
-      <update_rate>10</update_rate>
+      <update_rate>1</update_rate>
       <topic>/rpi_hq_camera/image_raw</topic>
       <camera>
         <horizontal_fov>0.6606</horizontal_fov>
         <image>
-          <width>640</width>
-          <height>480</height>
+          <width>320</width>
+  <height>240</height>
+
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -306,13 +312,13 @@
 
   <gazebo reference="rear_camera_link">
     <sensor name="rear_camera" type="camera">
-      <update_rate>5</update_rate>
+      <update_rate>1</update_rate>
       <topic>/rear_camera/image_raw</topic>
       <camera>
         <horizontal_fov>1.5708</horizontal_fov>
         <image>
-          <width>640</width>
-          <height>480</height>
+          <width>320</width>
+          <height>240</height>
           <format>R8G8B8</format>
         </image>
         <clip>

@@ -55,6 +55,11 @@ setup(
                 'tulpar_ika_perception.'
                 'terrain_speed_node:main'
             ),
+            (
+                'stage_decision_node = '
+                'tulpar_ika_perception.'
+                'stage_decision_node:main'
+            ),
         ],
     },
 )

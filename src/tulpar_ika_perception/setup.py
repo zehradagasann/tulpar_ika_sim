@@ -60,6 +60,11 @@ setup(
                 'tulpar_ika_perception.'
                 'stage_decision_node:main'
             ),
+            (
+                'brightness_filter_node = '
+                'tulpar_ika_perception.'
+                'brightness_filter_node:main'
+            ),
         ],
     },
 )

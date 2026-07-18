@@ -92,13 +92,23 @@ int main(int argc, char ** argv)
     return 1;
   }
 
+  // DUZELTME (18 Temmuz 2026, Nav2 dogrulama oturumu): eskiden bu dongu
+  // "status == RUNNING" oldugu surece donuyordu, ana_tree.xml da bu yuzden
+  // koku Repeat(-1)+ForceSuccess ile sarip "hicbir zaman RUNNING disina
+  // cikma" numarasi yapiyordu - ama BT.CPP'nin Repeat decorator'u child
+  // SUCCESS dondugunde onu AYNI tickOnce() cagrisi icinde senkron olarak
+  // tekrar tikliyor, bu da sonsuz/kilitlenmis bir C++ donguye (CPU %90+,
+  // saniyede yuz binlerce log satiri) yol aciyordu. Duzeltme: agac
+  // SUCCESS/FAILURE ile bitse bile program kapanmaz - bir sonraki DIS
+  // dongu adiminda (asagidaki sleep'ten SONRA) agac yeniden tiklenir, bu
+  // da BT.CPP'de agaci basindan yeniden baslatir (standart/beklenen
+  // davranis). Boylece "parkur bitene kadar sürekli tekrar et" istegi
+  // Repeat decorator'suz, senkron dongu riski olmadan saglanir.
   RCLCPP_INFO(node->get_logger(), "tulpar_bt_executor: agac calistiriliyor");
   BT::NodeStatus status = BT::NodeStatus::RUNNING;
-  while (rclcpp::ok() && status == BT::NodeStatus::RUNNING) {
+  while (rclcpp::ok()) {
     status = tree.tickOnce();
-    if (status == BT::NodeStatus::RUNNING) {
-      tree.sleep(bt_loop_duration);
-    }
+    tree.sleep(bt_loop_duration);
   }
 
   RCLCPP_INFO(

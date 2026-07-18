@@ -8,7 +8,7 @@ from launch.actions import (
     TimerAction,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration, PythonExpression, IfElseSubstitution
 from launch_ros.actions import Node
 import xacro
 
@@ -43,6 +43,16 @@ def generate_launch_description():
         ),
     )
 
+    # 18 Temmuz 2026: Nav2 dogrulama oturumunda gz sim GUI'nin (~3.2GB RSS)
+    # sistem bellegini swap'a ittigi, bunun da RTAB-Map'in TF senkronunu
+    # bozup /map'i hic yayinlatmadigi goruldu - GUI'siz calisma secenegi
+    # eklendi: headless:=true ile "-s" bayragi eklenir (gz sim server-only).
+    headless_arg = DeclareLaunchArgument(
+        'headless',
+        default_value='false',
+        description='true ise Gazebo GUI acilmaz (gz sim -s), bellek baskisi altinda kullan.',
+    )
+
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -58,7 +68,14 @@ def generate_launch_description():
             )
         ]),
         launch_arguments={
-            "gz_args": ["-r --render-engine ogre2 ", world]
+            "gz_args": [
+                IfElseSubstitution(
+                    LaunchConfiguration('headless'),
+                    if_value="-r -s --render-engine ogre2 ",
+                    else_value="-r --render-engine ogre2 ",
+                ),
+                world,
+            ]
         }.items()
     )
 
@@ -135,7 +152,7 @@ def generate_launch_description():
     ]
 
     return LaunchDescription([
-        gz_resource_path, world_arg, spawn_delay_arg,
+        gz_resource_path, world_arg, spawn_delay_arg, headless_arg,
         robot_state_publisher, gazebo, spawn_robot, bridge,
         *sensor_frame_aliases,
     ])

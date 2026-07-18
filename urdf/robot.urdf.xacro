@@ -112,8 +112,26 @@
          disliye ait goze (hub) isaret ediyordu, yanlisti. Kullanicinin tarif
          ettigi "disliye gore onde/solda, alcakta" konumuna gore ikinci aday
          denendi - trimesh raw koordinati ~(180,70,266)mm. Henuz gorsel teyit
-         edilmedi, iterasyon devam ediyor. -->
-    <origin xyz="0.522 -0.045 0.376" rpy="0 0 0"/>
+         edilmedi, iterasyon devam ediyor.
+         18 Temmuz 2026 (Nav2 dogrulama oturumu): bu nokta govde mesh yuzeyine
+         trimesh ile olculdugunde sadece 16.7mm mesafede/gomulu cikti - GPU
+         lidar sensoru kendi govdesini her yonde ~0.09-0.45m menzilde "engel"
+         olarak goruyordu (Spin davranisi 0.1sn'de "Collision Ahead" ile iptal
+         oluyordu, RTAB-Map haritasi sahte yakin-engel verisiyle kirleniyordu).
+         GECICI duzeltme (1. deneme): ayni XY'de mesh'in bu noktadaki yerel
+         kolonu 283.7mm'de bitiyor sanildi (40mm yaricapta tarandi) - z
+         376->430mm'e (+54mm) cekildi, AMA canli /scan testinde hala 307
+         okumanin 209'u 0.5m altinda cikti - turret govdesi o dar yerel
+         kolon taramasinin gosterdiginden daha genis/karmasik saracaktir.
+         GECICI duzeltme (2. deneme, calisiyor): yerel tahmin yerine mesh'in
+         TUM govde icin global Z maksimumu (858.5mm ham koordinat) esas
+         alindi - 940mm (858.5'in ~82mm ustu) hicbir XY icin hicbir mesh
+         vertex'inin ustunde olamaz, garantili temiz. z=0.376->1.050m (raw
+         940mm). Bu KESIN/ONAYLI bir konum DEGIL, sadece Nav2/Spin/obstacle-
+         avoidance testini acmak icin gecici/gorsel-olarak-yanlis bir
+         cikarma - gercek lidar montaj noktasi mekanik ekiple/gorsel teyitle
+         netlesince degisecek. -->
+    <origin xyz="0.522 -0.045 1.050" rpy="0 0 0"/>
   </joint>
 
   <link name="laser_frame"/>

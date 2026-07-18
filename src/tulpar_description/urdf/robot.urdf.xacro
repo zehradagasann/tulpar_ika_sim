@@ -29,7 +29,7 @@
     <visual>
       <origin xyz="0.600 -0.300 0.110" rpy="0 0 1.5708"/>
       <geometry>
-        <mesh filename="package://tulpar_description/meshes/tulpar_ika_assembly.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://tulpar_description/meshes/tulpar_yeni.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminium"/>
     </visual>

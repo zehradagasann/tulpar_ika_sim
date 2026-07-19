@@ -14,7 +14,8 @@ class AtisYap : public TriggerServiceActionBase
 {
 public:
   AtisYap(const std::string & name, const BT::NodeConfig & config)
-  : TriggerServiceActionBase(name, config, "/atis_yap", "atis_simulate_mode", "AtisYap")
+  : TriggerServiceActionBase(
+      name, config, "/atis_yap", "atis_simulate_mode", "AtisYap", "/tulpar_bt/atis_event")
   {}
 };
 

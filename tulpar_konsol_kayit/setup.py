@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'tulpar_obstacle_injector'
+package_name = 'tulpar_konsol_kayit'
 
 setup(
     name=package_name,
@@ -10,22 +10,21 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/obstacle_injector.launch.py']),
+        ('share/' + package_name + '/launch', ['launch/olay_gunlugu.launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='talha',
     maintainer_email='talha.dag2005@gmail.com',
     description=(
-        '/detections icindeki koni tespitlerini derinlik + TF ile odom '
-        'frame konuma cevirip /parkur/koni_tespitleri olarak yayinlar.'
+        '5Hz konsol heartbeat + /sign_detected, /detections, '
+        '/tulpar_bt/atis_event olaylarini SQLite olay gunlugune yazar.'
     ),
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'obstacle_injector = tulpar_obstacle_injector.obstacle_injector_node:main',
-            'slalom_hedef_bridge = tulpar_obstacle_injector.slalom_hedef_bridge_node:main',
+            'olay_gunlugu = tulpar_konsol_kayit.olay_gunlugu_node:main',
         ],
     },
 )

@@ -7,7 +7,8 @@ namespace tulpar_bt
 
 TriggerServiceActionBase::TriggerServiceActionBase(
   const std::string & name, const BT::NodeConfig & config,
-  std::string service_name, std::string simulate_param_name, std::string log_prefix)
+  std::string service_name, std::string simulate_param_name, std::string log_prefix,
+  std::string event_topic)
 : BT::StatefulActionNode(name, config),
   service_name_(std::move(service_name)),
   simulate_param_name_(std::move(simulate_param_name)),
@@ -18,6 +19,10 @@ TriggerServiceActionBase::TriggerServiceActionBase(
 
   if (!node_->has_parameter(simulate_param_name_)) {
     node_->declare_parameter<bool>(simulate_param_name_, true);
+  }
+
+  if (!event_topic.empty()) {
+    event_pub_ = node_->create_publisher<std_msgs::msg::Header>(event_topic, 10);
   }
 }
 
@@ -60,6 +65,11 @@ BT::NodeStatus TriggerServiceActionBase::onRunning()
   if (simulating_) {
     if (elapsed >= simulate_delay_sec_) {
       RCLCPP_INFO(node_->get_logger(), "%s: SIMULASYON tamamlandi, SUCCESS", log_prefix_.c_str());
+      if (event_pub_) {
+        std_msgs::msg::Header event;
+        event.stamp = node_->now();
+        event_pub_->publish(event);
+      }
       return BT::NodeStatus::SUCCESS;
     }
     return BT::NodeStatus::RUNNING;
@@ -71,6 +81,11 @@ BT::NodeStatus TriggerServiceActionBase::onRunning()
       RCLCPP_INFO(
         node_->get_logger(), "%s: servis basarili (%s)",
         log_prefix_.c_str(), response->message.c_str());
+      if (event_pub_) {
+        std_msgs::msg::Header event;
+        event.stamp = node_->now();
+        event_pub_->publish(event);
+      }
       return BT::NodeStatus::SUCCESS;
     }
     RCLCPP_ERROR(

@@ -191,9 +191,14 @@ global_costmap:
       publish_frequency: 1.0
       resolution: 0.10
       track_unknown_space: true
-      # base_link collision box'indan turetilen dikdortgen footprint (xacro'daki
-      # "1.150 x 1.207" degerine gore - bu deger bugunku senkrondan geldi, hala
-      # degisebilir, urdf ile senkron kontrol edilmeli).
+      # UYARI (18 Temmuz 2026) - bu footprint GECICI/DOGRULANMAMIS sayilmali:
+      # collision box (1150x1207x615mm) mekanik el notundan geldi ama Zehra'nin
+      # olctugu son mesh'in (tulpar_govde_final.stl) gercek bbox'i ile
+      # uyusmuyor (1166.6x1236.8x1133.2mm - ozellikle yukseklik 615 vs 1133mm).
+      # Tekerlek yaricapi da cozulmemis: mekanik not r=0.20 diyor, Talha'nin
+      # CAD olcumu r=0.166 (13-14 inc lastik tedarik listesiyle tutarli).
+      # Zehra mekanik ekibe kesin olcu sordu (bkz. CLAUDE.md) - cevap gelmeden
+      # bu footprint FINAL sayilmamali, guvenlik-kritik bir parametre.
       footprint: "[[0.575, 0.605], [0.575, -0.605], [-0.575, -0.605], [-0.575, 0.605]]"
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       static_layer:
@@ -204,10 +209,22 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
-        observation_sources: scan
+        # 18 Temmuz 2026: PoseArray (/parkur/koni_tespitleri) ObstacleLayer'a
+        # dogrudan bagl anamiyor (sadece LaserScan/PointCloud2 kabul ediyor) -
+        # tulpar_obstacle_injector artik ayni koni noktalarini PointCloud2
+        # olarak da /parkur/koni_engelleri'nde yayinliyor, "cones" kaynagi bu.
+        observation_sources: scan cones
         scan:
           topic: /scan
           data_type: "LaserScan"
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          raytrace_max_range: 20.0
+          obstacle_max_range: 18.0
+        cones:
+          topic: /parkur/koni_engelleri
+          data_type: "PointCloud2"
           max_obstacle_height: 2.0
           clearing: true
           marking: true
@@ -231,15 +248,26 @@ local_costmap:
       width: 6
       height: 6
       resolution: 0.10
+      # GECICI/DOGRULANMAMIS - bkz. global_costmap'teki ayni footprint'in
+      # yanindaki 18 Temmuz 2026 uyarisi (tekerlek/collision box mekanik
+      # teyidi bekleniyor).
       footprint: "[[0.575, 0.605], [0.575, -0.605], [-0.575, -0.605], [-0.575, 0.605]]"
       plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
-        observation_sources: scan
+        observation_sources: scan cones
         scan:
           topic: /scan
           data_type: "LaserScan"
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          raytrace_max_range: 20.0
+          obstacle_max_range: 18.0
+        cones:
+          topic: /parkur/koni_engelleri
+          data_type: "PointCloud2"
           max_obstacle_height: 2.0
           clearing: true
           marking: true

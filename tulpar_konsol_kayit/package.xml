@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>tulpar_obstacle_injector</name>
+  <name>tulpar_konsol_kayit</name>
   <version>0.0.1</version>
   <description>
-    /detections (tulpar_ika_msgs/Detection2DArray) icindeki koni tespitlerini
-    derinlik + TF ile odom frame'inde 3D konuma cevirip
-    /parkur/koni_tespitleri (geometry_msgs/PoseArray) olarak yayinlar.
+    Konsol icin 5Hz heartbeat + /sign_detected, /detections ve
+    /tulpar_bt/atis_event uzerinden anlamli olaylari SQLite'a yazan
+    olay gunlugu node'u.
   </description>
   <maintainer email="talha.dag2005@gmail.com">talha</maintainer>
   <license>Apache-2.0</license>
@@ -15,13 +15,7 @@
 
   <depend>rclpy</depend>
   <depend>tulpar_ika_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>sensor_msgs_py</depend>
-  <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>tf2_ros</depend>
-  <depend>tf2_geometry_msgs</depend>
-  <depend>cv_bridge</depend>
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>

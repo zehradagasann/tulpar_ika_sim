@@ -49,13 +49,20 @@ class OlayGunlugu(Node):
         self.declare_parameter('heartbeat_topic', '/konsol/heartbeat')
         self.declare_parameter('sign_debounce_sec', 2.0)
         self.declare_parameter('detection_debounce_sec', 2.0)
+        # 19 Temmuz 2026: track_id'ler suresiz saklanmiyor - bir izin gorulen
+        # bir daha asla loglanmamasi gerekseydi bu set sinirsiz buyurdu (cok
+        # gunluk/uzun oturumda bellek sizintisi). track_id_ttl_sec'ten daha eski
+        # kayitlar periyodik olarak temizlenir; gercek bir izleyicinin ayni
+        # track_id'yi bu kadar uzun sure sonra tekrar kullanmasi beklenmiyor.
+        self.declare_parameter('track_id_ttl_sec', 600.0)
 
         self.sign_debounce_sec = self.get_parameter('sign_debounce_sec').value
         self.detection_debounce_sec = self.get_parameter('detection_debounce_sec').value
+        self.track_id_ttl_sec = self.get_parameter('track_id_ttl_sec').value
 
         self._son_sign_log = {}       # class_id -> son loglanma zamani (monotonic)
         self._son_detection_log = {}  # track_id ya da class_name -> son loglanma zamani
-        self._gorulen_track_id = set()
+        self._gorulen_track_id = {}   # track_id -> ilk gorulme zamani (monotonic)
 
         db_path = self.get_parameter('db_path').value
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -150,6 +157,14 @@ class OlayGunlugu(Node):
                 mesafe_m=det.distance_m if det.distance_valid else None,
             )
 
+    def _prune_gorulen_track_id(self, now):
+        expired = [
+            tid for tid, seen in self._gorulen_track_id.items()
+            if (now - seen) > self.track_id_ttl_sec
+        ]
+        for tid in expired:
+            del self._gorulen_track_id[tid]
+
     def _detections_callback(self, msg: Detection2DArray):
         now = time.monotonic()
         for det in msg.detections:
@@ -157,10 +172,10 @@ class OlayGunlugu(Node):
                 continue
 
             if det.track_id_valid:
-                key = ('track', det.track_id)
-                if key in self._gorulen_track_id:
+                if det.track_id in self._gorulen_track_id:
                     continue
-                self._gorulen_track_id.add(key)
+                self._gorulen_track_id[det.track_id] = now
+                self._prune_gorulen_track_id(now)
             else:
                 key = ('class', det.class_name)
                 son = self._son_detection_log.get(key)

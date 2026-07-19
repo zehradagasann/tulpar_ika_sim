@@ -40,7 +40,18 @@ class CollisionChecker(Node):
         self.declare_parameter('robot_frame', 'base_footprint')
         self.declare_parameter('lookahead_time_sec', 1.0)
         self.declare_parameter('time_step_sec', 0.1)
-        self.declare_parameter('robot_radius_m', 0.65)
+        # 19 Temmuz 2026: onceden 0.65 idi - config/nav2_params.yaml'daki
+        # footprint'ten (0.575 x 0.605) BAGIMSIZ, hicbir yerde turetilmemis bir
+        # sayiydi. Govde koseleri merkezden sqrt(0.575^2+0.605^2)=~0.835m
+        # uzakta - 0.65'lik bir daire bu koseleri kapsamiyordu; sadece Nav2'nin
+        # inflation_radius=0.9/cost_scaling_factor=3.0 ayari sayesinde "lethal"
+        # esigi (90) engelden ~0.92m'ye kadar yayilip bu farki tesadufen
+        # kapatiyordu (kasitli bir marj degildi). Simdi footprint'in kose
+        # (circumscribed) mesafesine esitlendi. NOT: bu deger nav2_params.yaml
+        # footprint'i degistiginde (mekanik ekip govde/tekerlek olcusunu
+        # onayladiginda) elle birlikte guncellenmeli - iki dosya arasinda
+        # otomatik senkron yok.
+        self.declare_parameter('robot_radius_m', 0.835)
         self.declare_parameter('lethal_cost_threshold', 90)
 
         self.robot_frame = self.get_parameter('robot_frame').value

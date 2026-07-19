@@ -199,6 +199,9 @@ global_costmap:
       # CAD olcumu r=0.166 (13-14 inc lastik tedarik listesiyle tutarli).
       # Zehra mekanik ekibe kesin olcu sordu (bkz. CLAUDE.md) - cevap gelmeden
       # bu footprint FINAL sayilmamali, guvenlik-kritik bir parametre.
+      # 19 Temmuz 2026: bu footprint degisirse tulpar_safety/collision_checker_node.py
+      # icindeki robot_radius_m (kose/circumscribed mesafesi) da elle guncellenmeli -
+      # iki dosya arasinda otomatik senkron yok, bkz. o dosyadaki yorum.
       footprint: "[[0.575, 0.605], [0.575, -0.605], [-0.575, -0.605], [-0.575, 0.605]]"
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       static_layer:

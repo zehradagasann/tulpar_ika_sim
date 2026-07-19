@@ -13,6 +13,14 @@ Sozlesme:
   - obstacle_injector'dan farkli olarak burada Detection2D.depth_m yok -
     slalom_core sadece piksel uretiyor, derinlik BU node icinde depth
     goruntusunden (ayni kamera) o pikselden ornekleniyor.
+  - target_x_px/y_px, msg.source_width/height cozunurlugunde hesaplanmis
+    olabilir (orn. Zehra'nin RGB uzerinde calisan algoritmasi) - bu, derinlik
+    goruntusunun kendi cozunurlugunden FARKLIYSA piksel oransal olarak
+    derinlik goruntusune olceklenir (19 Temmuz 2026, onceden bu ayrim
+    yapilmiyordu - RGB/derinlik cozunurlugu farkliysa hedef sessizce yanlis
+    hesaplaniyordu). Bu sadece FOV/hizalama ozdesse gecerli bir yaklastirma -
+    gercek donanimda RGB-derinlik hizalanmasi (align) farkliysa Zehra ile
+    tekrar gozden gecirilmeli.
   - turn_direction ayrica tasinmiyor (pose'un konumundan cikarilabilir,
     CLAUDE.md'deki tartismayla tutarli).
   - speed_level PoseStamped'te yer olmadigi icin ayri bir topic'te
@@ -140,8 +148,24 @@ class SlalomHedefBridge(Node):
             )
             return
 
-        u_px = int(round(msg.target_x_px))
-        v_px = int(round(msg.target_y_px))
+        target_x_px = msg.target_x_px
+        target_y_px = msg.target_y_px
+        if (msg.source_width and msg.source_height
+                and (msg.source_width != self.camera_info.width
+                     or msg.source_height != self.camera_info.height)):
+            scale_x = self.camera_info.width / msg.source_width
+            scale_y = self.camera_info.height / msg.source_height
+            target_x_px *= scale_x
+            target_y_px *= scale_y
+            self.get_logger().warn(
+                f"slalom_target cozunurlugu ({msg.source_width}x{msg.source_height}) "
+                f"derinlik goruntusunden ({self.camera_info.width}x{self.camera_info.height}) "
+                "farkli - piksel oransal olceklendi, yaklastirma.",
+                throttle_duration_sec=5.0,
+            )
+
+        u_px = int(round(target_x_px))
+        v_px = int(round(target_y_px))
         depth = self._sample_depth(u_px, v_px)
         if depth is None:
             self.get_logger().warn(

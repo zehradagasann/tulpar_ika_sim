@@ -45,8 +45,11 @@
     - TAM İMPLEMENTE (donanıma bağımlı değil): WaitForSystemReady,
       OtonomSurus, ModDegisimiYap, DevamEt, StopNoktasindaMi, DurVeBekle
     - YAZILIMSAL TAMAMLANDI (donanım/başka ekip üyesinin verisi bekleniyor):
-      TabelaAlgılandiMi (Emin'in görüntü işleme çıktısı — /tabela_tespit
-      topic'i), HedefTespitYap ve AtisYap (lazer donanımı — /hedef_tespit_yap
+      TabelaAlgılandiMi (Emin'in görüntü işleme çıktısı — 17 Temmuz 2026'dan
+      itibaren /sign_detected [tulpar_ika_msgs/SignDetectionArray] dinliyor,
+      sadece action==ACTION_ENTER_SHOOTING_ZONE tetikliyor; eski
+      /tabela_tespit std_msgs/Bool placeholder'ı ARTIK KULLANILMIYOR),
+      HedefTespitYap ve AtisYap (lazer donanımı — /hedef_tespit_yap
       ve /atis_yap servisleri; gerçek servis yoksa simulate_mode ile
       simüle edilir, "SİMÜLASYON" olarak loglanır)
   Detaylar için ilgili .hpp dosyalarının başındaki yorumlara bakın.
@@ -86,7 +89,7 @@
       <description>TAM İMPLEMENTE. Nav2 lifecycle node'larının (varsayılan: bt_navigator, controller_server, planner_server) hepsi ACTIVE olana kadar lifecycle_msgs/GetState servisleriyle bekler.</description>
     </Action>
     <Condition ID="TabelaAlgılandiMi">
-      <description>YAZILIMSAL TAMAMLANDI — Emin'in görüntü işleme çıktısı bekleniyor. /tabela_tespit (std_msgs/Bool) topic'ine subscribe olur; elle test edilebilir: ros2 topic pub /tabela_tespit std_msgs/msg/Bool "{data: true}"</description>
+      <description>YAZILIMSAL TAMAMLANDI — Emin'in görüntü işleme çıktısı bekleniyor. /sign_detected (tulpar_ika_msgs/SignDetectionArray) topic'ine subscribe olur, sadece action==ACTION_ENTER_SHOOTING_ZONE (9) taşıyan tespitte SUCCESS döner; elle test edilebilir: ros2 topic pub /sign_detected tulpar_ika_msgs/msg/SignDetectionArray "{detections: [{action: 9}]}"</description>
     </Condition>
     <Action ID="ModDegisimiYap">
       <description>TAM İMPLEMENTE. navigate_to_pose action client'ı ile Nav2'nin aktif goal'unu gerçekten iptal eder (async_cancel_all_goals).</description>

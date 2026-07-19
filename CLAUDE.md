@@ -180,6 +180,13 @@ Zehra'nın `slalom_core.py`'si (aşağıdaki bölüm) henüz repoya alınmadı; 
 
 **19 Temmuz 2026 — `tulpar_konsol_kayit`'te sınırsız büyüyen `_gorulen_track_id` düzeltildi**: track_id'ler süresiz saklanıyordu (uzun/çok günlük oturumda bellek büyümesi riski) — artık `track_id_ttl_sec` (varsayılan 600s) süresinden eski kayıtlar periyodik olarak temizleniyor.
 
+### Gaz Kartı Firmware (`firmware/tulpar_teensy/`, 19 Temmuz 2026 — YENİ, Teensy 4.1)
+Roadmap'in Gün 2 "I2C gaz kartı bring-up" görevinin yazılım kısmı. Donanım/elektronik ekibinden gelen **"TULPAR Gaz Kartı — Donanım → Yazılım Handoff (v1)"** dokümanına (`~/Downloads/TULPAR~1.MD`, 19 Temmuz) göre yazıldı — pinler/adresler/sıralama roadmap'teki eski taslaktan DEĞİL, bu handoff dokümanından alındı. `TCA9548A` (0x70) mux + 4× `PCF8591` (hepsi 0x48, mux ayırt eder) → `OP291` yükseltici zinciri; `SurucuKatmani::setGaz(teker, deger)` mux-seç→DAC-yaz→mux-kapat sırasıyla çalışıyor. `I2CBus` arayüzü (`WireI2CBus`=gerçek donanım, `MockI2CBus`=test) ile donanımsız PC unit testi yazıldı ve **çalıştırılıp geçti** (`firmware/tulpar_teensy/test/`, mux seçim/DAC byte sırası doğrulandı). `setup()` sırası handoff'un B3 kuralına göre: `Wire.begin()`→hemen 4 kanala `setGaz(0)`→TCA9548A sağlık kontrolü→WDT aç→**ancak bundan sonra** kilit rölesi (pin 3) HIGH yapılıyor (açılış anındaki DAC-tanımsızlığının motorlara ulaşmaması için). WDT `Watchdog_t4` kütüphanesine bağlı (kurulmalı).
+
+**Çözülmemiş, kod yazılmadan önce flaglenen çelişki**: roadmap dokümanı ELRS alıcıyı Serial7/pin28-29'a koyarken, bu yeni handoff dokümanı ELRS'i Serial1/pin0-1'e, pin28-29-32'yi ise WT901C IMU'ya ayırıyor. Kullanıcı "pinleri tamamen handoff dokümanına göre ayarla" dedi — `config.h`'daki rezerve pin listesi handoff'a göre yazıldı, ama gerçek ELRS/IMU firmware'i (henüz yazılmadı) bu pinleri kullanmadan önce donanım ekibiyle bu çelişki teyit edilmeli.
+
+**Test durumu**: sadece mantık/I2C-mesaj-sırası PC'de doğrulandı. Gerçek voltaj çıktısı, TCA9548A/PCF8591 fiziksel yanıtı, trimpot kalibrasyonu — hiçbiri henüz test edilmedi (donanım masada değil, hâlâ bloke).
+
 ### Konsol Olay Günlüğü + Heartbeat (`tulpar_konsol_kayit/`, 19 Temmuz 2026 — YENİ PAKET)
 Roadmap'in Gün 3 "Konsol Heartbeat (5Hz) + olay günlüğü + SQLite kaydı" görevinin yazılım kısmı. Yeni Python paketi (ament_python), symlink kurulumu gerekiyor (bkz. yukarıdaki "One-time setup"). `olay_gunlugu_node.py`:
 - 5Hz `/konsol/heartbeat` (`std_msgs/Header`) yayınlar.

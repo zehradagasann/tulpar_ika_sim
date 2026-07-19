@@ -6,10 +6,10 @@ from tulpar_ika_perception.slalom_core import (
 
 def main() -> None:
     detections = [
-        ConeDetection(x=180.0, y=220.0, color="blue"),
-        ConeDetection(x=460.0, y=230.0, color="yellow"),
-        ConeDetection(x=200.0, y=320.0, color="blue"),
-        ConeDetection(x=440.0, y=330.0, color="yellow"),
+        ConeDetection(image_x=180.0, image_y=220.0, cone_color="blue"),
+        ConeDetection(image_x=460.0, image_y=230.0, cone_color="yellow"),
+        ConeDetection(image_x=200.0, image_y=320.0, cone_color="blue"),
+        ConeDetection(image_x=440.0, image_y=330.0, cone_color="yellow"),
     ]
 
     image_center_x = 320.0

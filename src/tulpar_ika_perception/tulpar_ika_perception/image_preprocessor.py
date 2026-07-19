@@ -73,7 +73,11 @@ class ImagePreprocessor(Node):
 
     @staticmethod
     def odd_positive(value: int) -> int:
-        """Filtre çekirdeğini pozitif tek sayıya dönüştürür."""
+        """Filtre/morfoloji çekirdeğini pozitif tek sayıya dönüştürür.
+
+        Yalnızca GaussianBlur ve morfolojik işlemler için kullanılır;
+        bunlar OpenCV'de tek sayı çekirdek boyutu gerektirir.
+        """
         value = max(int(value), 1)
 
         if value % 2 == 0:
@@ -82,14 +86,75 @@ class ImagePreprocessor(Node):
         return value
 
     @staticmethod
+    def positive_int(value: int, minimum: int = 1) -> int:
+        """Tek sayı zorunluluğu olmayan sayaç/boyut parametreleri için.
+
+        CLAHE'nin tileGridSize'ı bir çekirdek değil, karo SAYISIDIR;
+        tek sayı olma zorunluluğu yoktur, bu yüzden odd_positive ile
+        karıştırılmamalıdır.
+        """
+        return max(int(value), minimum)
+
+    @staticmethod
     def hsv_array(values: Sequence[int]) -> np.ndarray:
-        """ROS parametre listesini uint8 NumPy dizisine çevirir."""
+        """ROS parametre listesini uint8 NumPy dizisine çevirir ve
+        OpenCV'nin geçerli HSV aralığına göre doğrular/kırpar.
+
+        OpenCV'de: H -> [0, 179], S -> [0, 255], V -> [0, 255].
+        """
         if len(values) != 3:
             raise ValueError(
                 'HSV parametresi tam olarak üç değer içermelidir.'
             )
 
-        return np.asarray(values, dtype=np.uint8)
+        hue, saturation, value = values
+
+        if not (0 <= hue <= 179):
+            raise ValueError(
+                f'Geçersiz Hue değeri: {hue}. Hue 0-179 aralığında olmalıdır.'
+            )
+
+        if not (0 <= saturation <= 255):
+            raise ValueError(
+                f'Geçersiz Saturation değeri: {saturation}. '
+                'Saturation 0-255 aralığında olmalıdır.'
+            )
+
+        if not (0 <= value <= 255):
+            raise ValueError(
+                f'Geçersiz Value değeri: {value}. Value 0-255 aralığında olmalıdır.'
+            )
+
+        return np.asarray([hue, saturation, value], dtype=np.uint8)
+
+    @staticmethod
+    def hue_range_mask(
+        hsv: np.ndarray,
+        lower_hsv: np.ndarray,
+        upper_hsv: np.ndarray,
+    ) -> np.ndarray:
+        """Hue kanalının 0/179 sınırını sarması gereken renkleri
+        (örn. kırmızı) de doğru şekilde maskeler.
+
+        lower_hsv[0] <= upper_hsv[0] ise normal tek aralık kullanılır.
+        lower_hsv[0] > upper_hsv[0] ise iki aralık hesaplanıp OR'lanır
+        (örn. lower=[170, ...], upper=[10, ...] -> [170,179] U [0,10]).
+        """
+        if lower_hsv[0] <= upper_hsv[0]:
+            return cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+        lower_first = lower_hsv.copy()
+        upper_first = upper_hsv.copy()
+        upper_first[0] = 179
+
+        lower_second = lower_hsv.copy()
+        lower_second[0] = 0
+        upper_second = upper_hsv.copy()
+
+        mask_first = cv2.inRange(hsv, lower_first, upper_first)
+        mask_second = cv2.inRange(hsv, lower_second, upper_second)
+
+        return cv2.bitwise_or(mask_first, mask_second)
 
     def apply_clahe(
         self,
@@ -107,7 +172,9 @@ class ImagePreprocessor(Node):
             self.get_parameter('clahe_clip_limit').value
         )
 
-        grid_size = self.odd_positive(
+        # NOT: tileGridSize bir karo SAYISIdır, tek sayı olmak zorunda
+        # değildir; bu yüzden odd_positive değil positive_int kullanılır.
+        grid_size = self.positive_int(
             self.get_parameter('clahe_grid_size').value
         )
 
@@ -186,8 +253,8 @@ class ImagePreprocessor(Node):
             cv2.COLOR_BGR2HSV,
         )
 
-        # 4. Renk maskesi
-        mask = cv2.inRange(
+        # 4. Renk maskesi (hue sarmasını da destekler, örn. kırmızı)
+        mask = self.hue_range_mask(
             hsv,
             lower_hsv,
             upper_hsv,

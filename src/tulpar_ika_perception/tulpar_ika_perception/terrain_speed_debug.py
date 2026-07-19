@@ -1,4 +1,4 @@
-from terrain_speed import compute_terrain_speed
+from tulpar_ika_perception.terrain_speed import compute_terrain_speed
 
 
 def main() -> None:
@@ -6,8 +6,10 @@ def main() -> None:
         "stage_01",
         "stage_02",
         "stage_03",
+        "stage_05",
         "stage_07",
         "stage_10",
+        "stop_line",
         "unknown",
     ]
 
@@ -18,6 +20,7 @@ def main() -> None:
             f"stage={result.stage_id:12s} "
             f"terrain={result.terrain_type:15s} "
             f"speed={result.speed_level:8s} "
+            f"known={str(result.is_known_stage):5s} "
             f"| {result.reason}"
         )
 

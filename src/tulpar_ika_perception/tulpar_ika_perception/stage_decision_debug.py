@@ -1,12 +1,26 @@
-from stage_decision import decide_stage, combine_speed
+from tulpar_ika_perception.stage_decision import combine_speed, decide_stage
 
 
 def main() -> None:
     print("=== StageDecision Debug ===")
-    all_stages = [f"stage_{i:02d}" for i in range(1, 13)] + ["stop_marking", "unknown"]
+    all_stages = [
+        f"stage_{i:02d}" for i in range(1, 13)
+    ] + [
+        "stop_marking",
+        "stop_line",
+        "traffic_cone",
+        "shooting_target",
+        "unknown",
+    ]
     for stage_id in all_stages:
         d = decide_stage(stage_id)
-        print(f"{d.stage_id:14s} gorev={d.mission:20s} hiz={d.speed_level:7s} davranis={d.behavior}")
+        print(
+            f"{stage_id:16s} -> "
+            f"normalized={d.stage_id:14s} "
+            f"gorev={d.mission:20s} "
+            f"hiz={d.speed_level:7s} "
+            f"davranis={d.behavior:18s}"
+        )
 
     print()
     print("=== combine_speed testleri ===")

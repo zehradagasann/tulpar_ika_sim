@@ -55,12 +55,22 @@ def apply_clahe(bgr_image: np.ndarray, clip_limit: float = 3.0, tile_size: int =
 
 
 def process_frame(bgr_image: np.ndarray):
+    if bgr_image is None or bgr_image.size == 0:
+        raise ValueError("Bos goruntu alindi.")
+
+    if len(bgr_image.shape) != 3 or bgr_image.shape[2] != 3:
+        raise ValueError(
+            f"Beklenmeyen goruntu formati alindi: shape={bgr_image.shape}"
+        )
+
     gray = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
     analysis = analyze_brightness(gray)
 
-    if analysis.clahe_applied:
+    if analysis.clahe_applied and analysis.condition != "high_variance":
         output_image = apply_clahe(bgr_image)
+        analysis.clahe_applied = True
     else:
         output_image = bgr_image
+        analysis.clahe_applied = False
 
     return output_image, analysis

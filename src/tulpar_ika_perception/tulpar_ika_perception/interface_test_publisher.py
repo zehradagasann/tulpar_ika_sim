@@ -7,7 +7,6 @@ from tulpar_ika_msgs.msg import (
     Detection2D,
     Detection2DArray,
     SignDetection,
-    SignDetectionArray,
 )
 
 
@@ -24,7 +23,7 @@ class InterfaceTestPublisher(Node):
         )
 
         self.sign_publisher = self.create_publisher(
-            SignDetectionArray,
+            SignDetection,
             '/sign_detected',
             10,
         )
@@ -99,22 +98,12 @@ class InterfaceTestPublisher(Node):
         self.detection_publisher.publish(array_message)
 
     def publish_sign(self, timestamp) -> None:
-        """Örnek hız sınırı tabelası yayınlar."""
-
-        array_message = SignDetectionArray()
-
-        array_message.header.stamp = timestamp
-        array_message.header.frame_id = (
-            'camera_front_optical_frame'
-        )
-
-        array_message.image_width = 1280
-        array_message.image_height = 720
+        """Karar node'lariyla uyumlu tekil stage tespiti yayinlar."""
 
         sign = SignDetection()
 
-        sign.class_id = 2
-        sign.class_name = 'speed_limit'
+        sign.class_id = 4
+        sign.class_name = 'stage_05'
         sign.confidence = 0.95
 
         sign.bbox.x_offset = 550
@@ -130,14 +119,12 @@ class InterfaceTestPublisher(Node):
         sign.distance_m = 4.5
         sign.distance_valid = True
 
-        sign.action = SignDetection.ACTION_SPEED_LIMIT
+        sign.action = SignDetection.ACTION_UNKNOWN
 
-        sign.speed_limit_mps = 0.30
-        sign.speed_limit_valid = True
+        sign.speed_limit_mps = 0.0
+        sign.speed_limit_valid = False
 
-        array_message.detections.append(sign)
-
-        self.sign_publisher.publish(array_message)
+        self.sign_publisher.publish(sign)
 
 
 def main(args=None) -> None:

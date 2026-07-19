@@ -1,0 +1,43 @@
+sign_classes:
+  # action alani, /sign_detected uzerindeki olay filtreleme ve konsol event
+  # gunlugu icin kullanilir. Sadece semantik olarak anlamli tabelalara action
+  # verilir; diger stage etiketleri ACTION_UNKNOWN olarak kalir.
+  0:
+    name: stage_01
+    action: ACTION_WATER
+  1:
+    name: stage_02
+    action: ACTION_ROUGH_TERRAIN
+  2:
+    name: stage_03
+    action: ACTION_UNEVEN_TERRAIN
+  3:
+    name: stage_04
+    action: ACTION_UNKNOWN
+  4:
+    name: stage_05
+    action: ACTION_UNKNOWN
+  5:
+    name: stage_06
+    action: ACTION_UNKNOWN
+  6:
+    name: stage_07
+    action: ACTION_ROUGH_TERRAIN
+  7:
+    name: stage_08
+    action: ACTION_UNKNOWN
+  8:
+    name: stage_09
+    action: ACTION_UNKNOWN
+  9:
+    name: stage_10
+    action: ACTION_UNKNOWN
+  10:
+    name: stage_11
+    action: ACTION_UNKNOWN
+  11:
+    name: stage_12
+    action: ACTION_ENTER_SHOOTING_ZONE
+  12:
+    name: stop_marking
+    action: ACTION_STOP

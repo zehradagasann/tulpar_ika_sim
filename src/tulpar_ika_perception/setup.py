@@ -1,0 +1,70 @@
+from setuptools import find_packages, setup
+
+package_name = 'tulpar_ika_perception'
+
+setup(
+    name=package_name,
+    version='0.1.0',
+    packages=find_packages(exclude=['test']),
+    data_files=[
+        (
+            'share/ament_index/resource_index/packages',
+            ['resource/' + package_name],
+        ),
+        (
+            'share/' + package_name,
+            ['package.xml'],
+        ),
+        (
+            'share/' + package_name + '/config',
+            ['config/class_registry.yaml'],
+        ),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='zehra',
+    maintainer_email='zehradagasan09@gmail.com',
+    description=(
+        'TULPAR İKA algılama ve görüntü işleme düğümleri.'
+    ),
+    license='Apache-2.0',
+    entry_points={
+        'console_scripts': [
+            (
+                'interface_test_publisher = '
+                'tulpar_ika_perception.'
+                'interface_test_publisher:main'
+            ),
+            (
+                'webcam_publisher = '
+                'tulpar_ika_perception.'
+                'webcam_publisher:main'
+            ),
+            (
+                'image_preprocessor = '
+                'tulpar_ika_perception.'
+                'image_preprocessor:main'
+            ),
+            (
+                'slalom_debug = '
+                'tulpar_ika_perception.'
+                'slalom_debug:main'
+            ),
+            (
+                'terrain_speed_node = '
+                'tulpar_ika_perception.'
+                'terrain_speed_node:main'
+            ),
+            (
+                'stage_decision_node = '
+                'tulpar_ika_perception.'
+                'stage_decision_node:main'
+            ),
+            (
+                'brightness_filter_node = '
+                'tulpar_ika_perception.'
+                'brightness_filter_node:main'
+            ),
+        ],
+    },
+)

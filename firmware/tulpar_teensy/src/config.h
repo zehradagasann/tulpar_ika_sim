@@ -40,10 +40,20 @@ constexpr uint32_t WDT_TIMEOUT_MS = 1000;  // bu sure icinde feed() gelmezse res
 
 // --- REZERVE (bu gaz karti kodunun DOKUNMAYACAGI pinler) ---
 // Kaynak: handoff v1 B4 - baska alt sistemlere ayrildi.
-// 0,1         : ELRS alici (Serial1, CRSF 420000 baud)
-// 4..11       : 4x AMT102 enkoder A/B
-// 14,15,36,37 : fren servolari PWM (50Hz, 500-2500us)
-// 22,23       : CAN1 (SN65HVD230, Daly BMS)
-// 28,29,32    : WT901C IMU (Serial7 + MAX485 DE/RE=32)
+//
+// 19 Temmuz 2026 (kullanici karari): ELRS/IMU/CAN, AKV (video kanit)
+// asamasinda donanimsal olarak FAKE gosterilecek - gercek baglanti simdilik
+// hic planlanmadi. Bu yuzden pinleri burada REZERVE EDILMIYOR (handoff v1'de
+// verilen degerler bilerek KULLANILMADI, bekliyor):
+//   - ELRS alici        - pin HENUZ BELLI DEGIL
+//   - WT901C IMU        - pin HENUZ BELLI DEGIL
+//   - CAN1 / Daly BMS   - pin HENUZ BELLI DEGIL
+//
+// 4..11       : 4x AMT102 enkoder A/B (handoff v1 B4 - degismedi, aktif)
+//
+// ASAGIDAKILERIN PINI DE HENUZ BELIRLENMEDI (19 Temmuz 2026) - kullanici
+// yarin bilgi verecek, o zamana kadar bos birakildi, bu kod bunlara DOKUNMUYOR:
+//   - Fren servolari PWM       - PIN BELLI DEGIL
+//   - Lazer/atis mekanizmasi + taret motoru - PIN BELLI DEGIL
 
 }  // namespace tulpar

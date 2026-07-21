@@ -10,21 +10,26 @@ servis edemiyor (nvbuf_utils: dmabuf_fd -1 / NvBufSurfaceFromFd Failed) ve
 temiz, ikincisi her zaman bozuk; birinci oturum temiz EOS ile kapansa bile).
 
 Bu yuzden kamerayi ACAN TEK BIR SUREC var: bu node. Argus bir kez acilir,
-gorev boyunca acik kalir ve goruntu GStreamer `tee` ile iki kola ayrilir:
+gorev boyunca acik kalir. MIMARI (22 Tem itibariyle iki bagimsiz kamera):
 
-    nvarguscamerasrc (1920x1080@30, tek Argus oturumu)
+    nvarguscamerasrc (Pi HQ, 1920x1080@30, tek Argus oturumu)
         |
-        +-- [kol A] nvvidconv -> nvv4l2h264enc (DONANIM) -> rtph264pay -> webrtcbin
-        |          Konsola giden temiz video akisi. Overlay YOK - dusuk CPU,
-        |          dusuk gecikme. Nisan artisi/kutu konsol tarafinda cizilir.
-        |
-        +-- [kol B] nvvidconv (1280x720 BGR) -> appsink -> YOLO + PID
-                   Hedef tespiti ve taret komutu hesabi. Sonuclar veri olarak
-                   yayilir (su an stdout; ROS2 /detections baglanmasi TODO).
+        +-- nvvidconv -> nvv4l2h264enc (DONANIM) -> rtph264pay -> webrtcbin
+            Konsola giden ATIS kamerasi akisi. Overlay YOK - dusuk CPU,
+            dusuk gecikme. Nisan artisi/kutu konsol tarafinda cizilir.
+            Argus'un TEK tuketicisi bu - tee/appsink YOK artik (asagi bak).
 
-Boylece PID takibi ve konsol video yayini AYNI ANDA calisabilir - eski
-pid_target_tracking_jetson.py ile jetson_webrtc_sender.py'yi ayni anda
-calistirmak Argus bug'i yuzunden imkansizdi.
+    RealSense D435if (pyrealsense2, 1280x720@30, ayri thread)
+        |
+        +-- renk karesi -> YOLO -> find_shooting_target -> PID (pan/tilt)
+        +-- hizalanmis derinlik karesi -> bbox merkezinde derinlik -> Det.depth_m
+        +-- ROS2 /detections + /tulpar_bt/atis_event (DetectionPublisher)
+
+RealSense kendi USB3 baglantisini kullandigi icin Argus'tan tamamen
+bagimsiz - YOLO/PID/ROS artik Pi HQ'nun tek-Argus-oturumu kisitina hic
+tabi degil. (Eskiden ikisi ayni Argus oturumunu paylasan bir GStreamer
+`tee` ile bagliydi; D435if entegrasyonuyla bu ayrim gereksizlesti ve
+kaldirildi.)
 
 ESKI UDP AKISI KALDIRILDI:
 pid_target_tracking_jetson.py'deki cv2.VideoWriter + x264enc + udpsink yolu
@@ -73,19 +78,25 @@ SHOOTING_TARGET_CLASS_ID = 13   # dataset_combined/data.yaml sirasi ile ayni
 CONF_THRESHOLD = 0.5
 LOCK_THRESHOLD_PX = 15
 
-# Yayin (kol A) cozunurlugu - konsola giden goruntu
+# Yayin (Pi HQ / Argus) cozunurlugu - konsola giden ATIS kamerasi goruntusu
 YAYIN_W, YAYIN_H, YAYIN_FPS = 1920, 1080, 30
-# Tespit (kol B) cozunurlugu - YOLO'ya giren goruntu (kucuk = hizli)
-TESPIT_W, TESPIT_H = 1280, 720
+# Tespit (RealSense D435if) cozunurlugu - YOLO'ya giren renk karesi
+TESPIT_W, TESPIT_H, TESPIT_FPS = 1280, 720, 30
 
 # KTR / Gun4: 7.5 Mbps sinirinin altinda kalinacak. Guvenlik payiyla 6 Mbps.
 BITRATE_KBPS = 6000
 
+# --- RealSense derinlik ---
+# bbox merkezi etrafinda (2*yarim+1)^2 piksellik pencerede medyan alinir -
+# tek piksele guvenmek specular yansima/no-return karelerinde yanlis derinlik verir.
+REALSENSE_DERINLIK_YARIM_PENCERE = 2
+REALSENSE_MIN_DERINLIK_M = 0.2
+REALSENSE_MAX_DERINLIK_M = 8.0   # D435 spec: ~10m ama pratikte 8m sonrasi gurultu artiyor
+
 # --- ROS2 ---
-# D435if TESPIT kamerasidir; tespitler onun renk akisindan geldiginde
-# bu optik frame dogrudur. DIKKAT: node su an hala Pi HQ (Argus) okuyor;
-# YOLO kolu D435if'e tasinana kadar /detections koordinatlari Pi HQ'dan gelir
-# ve bu frame ile UYUMSUZDUR -- o gecise kadar costmap'e baglamayin.
+# D435if artik GERCEKTEN tespit kamerasi (bkz. yukaridaki mimari notu) -
+# /detections koordinatlari ve derinligi bu kameradan geliyor, frame_id ile
+# tutarli.
 ROS_FRAME_ID = "d435if_color_optical_frame"
 # Atis bolgesi: goruntu merkezine gore normalize yari-genislik/yukseklik.
 # LOCK_THRESHOLD_PX ile ayni fikir, ama cozunurlukten bagimsiz.
@@ -97,23 +108,18 @@ STUN_SERVER = "stun://stun.l.google.com:19302"
 PIPELINE_DESC = (
     "nvarguscamerasrc sensor-id=0 ! "
     "video/x-raw(memory:NVMM),width={yw},height={yh},framerate={fps}/1 ! "
-    "tee name=t "
-    # --- kol A: WebRTC yayini (donanim encoder) ---
-    "t. ! queue max-size-buffers=4 leaky=downstream ! "
+    "queue max-size-buffers=4 leaky=downstream ! "
     "nvvidconv ! video/x-raw(memory:NVMM),format=NV12 ! "
     "nvv4l2h264enc bitrate={bitrate} insert-sps-pps=true idrinterval=30 maxperf-enable=true ! "
     "h264parse config-interval=-1 ! "
     "rtph264pay config-interval=1 pt=96 ! "
-    # leaky ZORUNLU: izleyici bagli degilken webrtcbin paketleri bosaltmaz,
-    # bu queue dolar ve tee uzerinden KOL B'yi de bloke eder -> YOLO/PID durur.
-    # Sahada yer istasyonu koparsa taret korlesmesin diye eski kareler dusuruluyor.
+    # leaky: izleyici bagli degilken webrtcbin paketleri bosaltmaz, bu queue
+    # dolup encoder'a geri basinc yapabilir. Sahada yer istasyonu koparsa
+    # atis kamerasi akisi donmasin diye eski kareler dusuruluyor. (Eskiden
+    # bu ayrica tee uzerinden YOLO kolunu da bloke ediyordu - artik YOLO
+    # RealSense'te, bagimsiz, bu queue'dan etkilenmiyor.)
     "queue leaky=downstream max-size-buffers=60 ! "
-    'capsfilter caps="application/x-rtp,media=video,encoding-name=H264,payload=96" '
-    # --- kol B: YOLO/PID icin BGR kareler ---
-    "t. ! queue max-size-buffers=2 leaky=downstream ! "
-    "nvvidconv ! video/x-raw,format=BGRx,width={tw},height={th} ! "
-    "videoconvert ! video/x-raw,format=BGR ! "
-    "appsink name=tespit_sink drop=true max-buffers=2 sync=false"
+    'capsfilter caps="application/x-rtp,media=video,encoding-name=H264,payload=96"'
 )
 
 
@@ -161,6 +167,32 @@ def find_shooting_target(results, conf_threshold=CONF_THRESHOLD):
     return (x1 + x2) / 2, (y1 + y2) / 2, best_conf
 
 
+def _derinlik_olc(depth_frame, cx, cy,
+                   yarim=REALSENSE_DERINLIK_YARIM_PENCERE,
+                   min_m=REALSENSE_MIN_DERINLIK_M, max_m=REALSENSE_MAX_DERINLIK_M):
+    """bbox merkezi etrafindaki kucuk pencerede medyan derinlik (metre).
+
+    Tek piksele guvenmek yerine pencere almamizin sebebi: specular yansima
+    veya IR golgesi tek pikselde 0/gurultulu derinlik dondurebilir, medyan
+    bu tur tekil hatalara karsi dayanikli. Donen: (derinlik_m, gecerli_mi).
+    """
+    w, h = depth_frame.get_width(), depth_frame.get_height()
+    xi, yi = int(round(cx)), int(round(cy))
+    degerler = []
+    for dy in range(-yarim, yarim + 1):
+        for dx in range(-yarim, yarim + 1):
+            x, y = xi + dx, yi + dy
+            if 0 <= x < w and 0 <= y < h:
+                d = depth_frame.get_distance(x, y)
+                if d > 0:
+                    degerler.append(d)
+    if not degerler:
+        return 0.0, False
+    degerler.sort()
+    medyan = degerler[len(degerler) // 2]
+    return medyan, (min_m <= medyan <= max_m)
+
+
 class KameraNode:
     def __init__(self, signaling_url, loop, tespit_aktif=True, ros_aktif=True):
         self.signaling_url = signaling_url
@@ -203,10 +235,6 @@ class KameraNode:
         if src_bin is None:
             raise RuntimeError("Kaynak bin olusturulamadi")
 
-        self.appsink = src_bin.get_by_name("tespit_sink")
-        if self.appsink is None:
-            raise RuntimeError("appsink (tespit_sink) bulunamadi")
-
         self.webrtc = Gst.ElementFactory.make("webrtcbin", "webrtcbin")
         if self.webrtc is None:
             raise RuntimeError("webrtcbin olusturulamadi - gstreamer1.0-plugins-bad kurulu mu?")
@@ -225,7 +253,7 @@ class KameraNode:
         if ret != Gst.PadLinkReturn.OK:
             raise RuntimeError(f"Kaynak bin -> webrtcbin link basarisiz: {ret.value_nick}")
         self.webrtc_sink_pad = sink_pad
-        log.info("Kol A (yayin) -> webrtcbin baglantisi kuruldu")
+        log.info("Pi HQ (atis yayini) -> webrtcbin baglantisi kuruldu")
 
         self.webrtc.connect("on-negotiation-needed", self._on_negotiation_needed)
         self.webrtc.connect("on-ice-candidate", self._on_ice_candidate)
@@ -314,10 +342,11 @@ class KameraNode:
         """create-offer cagrisi. GLib.timeout_add ile tekrar cagrilabilsin diye
         her zaman False doner (tek seferlik timeout).
 
-        NEDEN TEKRAR DENEME VAR: `tee` eklendikten sonra caps'in webrtcbin'in
-        sink pad'ine ulasmasi gecikebiliyor. Caps hazir degilken create-offer
-        bos (sdp=NULL) bir cevap donuyor ve "should not be reached" CRITICAL'i
-        aliniyor. Bu yuzden once caps bekleniyor, olmazsa offer tekrar deneniyor.
+        NEDEN TEKRAR DENEME VAR: pipeline PLAYING olduktan sonra caps'in
+        webrtcbin'in sink pad'ine ulasmasi gecikebiliyor. Caps hazir degilken
+        create-offer bos (sdp=NULL) bir cevap donuyor ve "should not be
+        reached" CRITICAL'i aliniyor. Bu yuzden once caps bekleniyor, olmazsa
+        offer tekrar deneniyor.
         """
         self._offer_denemesi += 1
         if self._offer_denemesi > 20:
@@ -392,48 +421,36 @@ class KameraNode:
             cand = msg["candidate"]
             self.webrtc.emit("add-ice-candidate", cand.get("sdpMLineIndex", 0), cand.get("candidate", ""))
 
-    # ---------------- tespit dongusu (kol B) ----------------
-
-    def _sample_to_frame(self, sample):
-        """Gst sample -> (numpy BGR dizisi, karenin YASI ns).
-
-        Yas = simdi - karenin yakalanma ani. ROS zaman damgasini bundan
-        turetiyoruz: stamp = time.time_ns() - yas. Boylece YOLO'nun
-        harcadigi sure damgaya karismiyor; LIDAR/derinlik fuzyonunda
-        kareler dogru anla eslesiyor.
-
-        buf.pts pipeline'in running-time'i cinsinden; mutlak duvar saati
-        degil. O yuzden farkini aliyoruz, kendisini degil.
-        """
-        buf = sample.get_buffer()
-        caps = sample.get_caps().get_structure(0)
-        w, h = caps.get_value("width"), caps.get_value("height")
-
-        yas_ns = 0
-        try:
-            clock = self.pipeline.get_clock()
-            if clock is not None and buf.pts != Gst.CLOCK_TIME_NONE:
-                simdi_running = clock.get_time() - self.pipeline.get_base_time()
-                yas_ns = max(0, simdi_running - buf.pts)
-        except Exception:  # noqa: BLE001 - saat yoksa yas 0 kabul edilir
-            yas_ns = 0
-
-        ok, harita = buf.map(Gst.MapFlags.READ)
-        if not ok:
-            return None, 0
-        try:
-            # Kopya sart: harita unmap edilince altindaki bellek gecersizlesir.
-            return np.ndarray((h, w, 3), buffer=harita.data, dtype=np.uint8).copy(), yas_ns
-        finally:
-            buf.unmap(harita)
+    # ---------------- tespit dongusu (RealSense D435if) ----------------
 
     def tespit_dongusu(self):
-        """Ayri thread: appsink'ten kare cekip YOLO + PID calistirir."""
+        """Ayri thread: RealSense D435if renk+derinlik akisindan YOLO + PID calistirir.
+
+        Argus/GStreamer pipeline'indan tamamen bagimsiz - kendi USB3
+        baglantisini kullanir. RealSense donmezse/USB2 kabloya duserse bu
+        thread etkilenir, Pi HQ atis yayini calismaya devam eder.
+        """
         log.info("Model yukleniyor: %s", MODEL_PATH)
         from ultralytics import YOLO  # agir import - sadece gerekince
+        import pyrealsense2 as rs  # agir/donanima bagimli - sadece gerekince
 
         model = YOLO(MODEL_PATH, task="detect")
-        log.info("Model hazir, tespit dongusu basliyor")
+        log.info("Model hazir, RealSense pipeline baslatiliyor")
+
+        rs_pipeline = rs.pipeline()
+        rs_config = rs.config()
+        rs_config.enable_stream(rs.stream.color, TESPIT_W, TESPIT_H, rs.format.bgr8, TESPIT_FPS)
+        rs_config.enable_stream(rs.stream.depth, TESPIT_W, TESPIT_H, rs.format.z16, TESPIT_FPS)
+        try:
+            rs_pipeline.start(rs_config)
+        except RuntimeError as e:
+            log.error(
+                "RealSense pipeline baslatilamadi (%s). USB3 (SuperSpeed) "
+                "kabloda mi baglisin? 3 kablodan sadece 1'i USB3 veriyordu, "
+                "digerleri USB2 - derinlik/renk akisi acilmayabilir.", e)
+            raise
+        align = rs.align(rs.stream.color)
+        log.info("RealSense pipeline hazir, tespit dongusu basliyor")
 
         merkez_x, merkez_y = TESPIT_W / 2, TESPIT_H / 2
         # Sinif adlari modelden. class_registry.yaml gelince buradan okunacak.
@@ -443,83 +460,92 @@ class KameraNode:
 
         onceki = GLib.get_monotonic_time()
         sayac = 0
-        bos_kare = 0
 
-        while self.calisiyor:
-            sample = self.appsink.emit("pull-sample")
-            if sample is None:
-                # Argus ikinci kez acilmissa pipeline kare uretmez ve bu
-                # dongu sessizce CPU yakar. Gorunur kilip nefes aldiriyoruz.
-                bos_kare += 1
-                if bos_kare in (30, 300, 3000):
-                    log.warning(
-                        "appsink %d kez bos dondu - Argus kare uretmiyor olabilir "
-                        "(bu boot'ta kamera ikinci kez mi aciliyor?)", bos_kare)
-                time.sleep(0.005)
-                continue
+        try:
+            while self.calisiyor:
+                try:
+                    frames = rs_pipeline.wait_for_frames(timeout_ms=1000)
+                except RuntimeError:
+                    log.warning("RealSense kare bekleme zaman asimi (USB baglantisi kopmus olabilir)")
+                    continue
 
-            frame, yas_ns = self._sample_to_frame(sample)
-            if frame is None:
-                continue
+                frames = align.process(frames)
+                color_frame = frames.get_color_frame()
+                depth_frame = frames.get_depth_frame()
+                if not color_frame or not depth_frame:
+                    continue
 
-            simdi = GLib.get_monotonic_time()
-            dt = (simdi - onceki) / 1_000_000.0  # mikrosaniye -> saniye
-            onceki = simdi
+                # capture_time_ns'i inference'tan ONCE aliyoruz ki YOLO'nun
+                # harcadigi sure damgaya karismasin (Pi HQ kolundaki 'yas'
+                # duzeltmesiyle ayni gerekce).
+                capture_time_ns = time.time_ns()
+                frame = np.asanyarray(color_frame.get_data())
 
-            t_infer = time.perf_counter()
-            results = model.predict(source=frame, verbose=False)[0]
-            infer_ms = (time.perf_counter() - t_infer) * 1000.0
+                simdi = GLib.get_monotonic_time()
+                dt = (simdi - onceki) / 1_000_000.0  # mikrosaniye -> saniye
+                onceki = simdi
 
-            # --- ROS2 /detections: TUM tespitler ---
-            # PID sadece SHOOTING_TARGET_CLASS_ID ile ilgileniyor, ama
-            # Zehra'nin costmap'i ve Talha'nin konsolu her sinifi istiyor.
-            dets = []
-            for box in results.boxes:
-                cls_id = int(box.cls[0])
-                x1, y1, x2, y2 = (float(v) for v in box.xyxy[0].cpu().numpy())
-                dets.append(
-                    Det(
-                        class_id=cls_id,
-                        class_name=str(sinif_adlari.get(cls_id, cls_id)),
-                        confidence=float(box.conf[0]),
-                        x1=x1, y1=y1, x2=x2, y2=y2,
+                t_infer = time.perf_counter()
+                results = model.predict(source=frame, verbose=False)[0]
+                infer_ms = (time.perf_counter() - t_infer) * 1000.0
+
+                # --- ROS2 /detections: TUM tespitler ---
+                # PID sadece SHOOTING_TARGET_CLASS_ID ile ilgileniyor, ama
+                # Zehra'nin costmap'i ve Talha'nin konsolu her sinifi istiyor.
+                dets = []
+                for box in results.boxes:
+                    cls_id = int(box.cls[0])
+                    x1, y1, x2, y2 = (float(v) for v in box.xyxy[0].cpu().numpy())
+                    cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+                    derinlik_m, derinlik_ok = _derinlik_olc(depth_frame, cx, cy)
+                    dets.append(
+                        Det(
+                            class_id=cls_id,
+                            class_name=str(sinif_adlari.get(cls_id, cls_id)),
+                            confidence=float(box.conf[0]),
+                            x1=x1, y1=y1, x2=x2, y2=y2,
+                            depth_m=derinlik_m,
+                            depth_valid=derinlik_ok,
+                        )
                     )
+                # Donen 'birincil' merkeze en yakin tespit -- PID'in istedigi
+                # bu DEGIL (PID sinif 13'e kilitli), o yuzden kullanmiyoruz.
+                self.ros.publish(
+                    detections=dets,
+                    image_size=(TESPIT_W, TESPIT_H),
+                    capture_time_ns=capture_time_ns,
+                    inference_ms=infer_ms,
                 )
-            # Donen 'birincil' merkeze en yakin tespit -- PID'in istedigi
-            # bu DEGIL (PID sinif 13'e kilitli), o yuzden kullanmiyoruz.
-            self.ros.publish(
-                detections=dets,
-                image_size=(TESPIT_W, TESPIT_H),
-                capture_time_ns=time.time_ns() - yas_ns,
-                inference_ms=infer_ms,
-            )
 
-            hedef = find_shooting_target(results)
+                hedef = find_shooting_target(results)
 
-            if hedef is not None:
-                x_c, y_c, conf = hedef
-                hata_x = x_c - merkez_x
-                hata_y = y_c - merkez_y
-                pan = pid_pan.update(hata_x, dt)
-                tilt = pid_tilt.update(hata_y, dt)
-                buyukluk = (hata_x ** 2 + hata_y ** 2) ** 0.5
-                durum = "LOCKED" if buyukluk < LOCK_THRESHOLD_PX else "TRACKING"
+                if hedef is not None:
+                    x_c, y_c, conf = hedef
+                    hata_x = x_c - merkez_x
+                    hata_y = y_c - merkez_y
+                    pan = pid_pan.update(hata_x, dt)
+                    tilt = pid_tilt.update(hata_y, dt)
+                    buyukluk = (hata_x ** 2 + hata_y ** 2) ** 0.5
+                    durum = "LOCKED" if buyukluk < LOCK_THRESHOLD_PX else "TRACKING"
 
-                # /detections ve /tulpar_bt/atis_event yukarida yayinlandi.
-                # Konsol nisan artisini kendi ciziyor, o yuzden videoya overlay
-                # basmiyoruz - sadece koordinat/durum verisi yayiliyor.
-                if sayac % 15 == 0:
-                    log.info(
-                        "[%s] hata=(%+.0f,%+.0f)px pan=%+.2f tilt=%+.2f conf=%.2f",
-                        durum, hata_x, hata_y, pan, tilt, conf,
-                    )
-            else:
-                pid_pan.reset()
-                pid_tilt.reset()
-                if sayac % 30 == 0:
-                    log.info("[NO TARGET] shooting_target tespit edilmedi")
+                    # /detections ve /tulpar_bt/atis_event yukarida yayinlandi.
+                    # Konsol nisan artisini kendi ciziyor, o yuzden videoya overlay
+                    # basmiyoruz - sadece koordinat/durum verisi yayiliyor.
+                    if sayac % 15 == 0:
+                        log.info(
+                            "[%s] hata=(%+.0f,%+.0f)px pan=%+.2f tilt=%+.2f conf=%.2f",
+                            durum, hata_x, hata_y, pan, tilt, conf,
+                        )
+                else:
+                    pid_pan.reset()
+                    pid_tilt.reset()
+                    if sayac % 30 == 0:
+                        log.info("[NO TARGET] shooting_target tespit edilmedi")
 
-            sayac += 1
+                sayac += 1
+        finally:
+            rs_pipeline.stop()
+            log.info("RealSense pipeline durduruldu")
 
     # ---------------- yasam dongusu ----------------
 

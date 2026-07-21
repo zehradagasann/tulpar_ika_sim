@@ -191,18 +191,16 @@ global_costmap:
       publish_frequency: 1.0
       resolution: 0.10
       track_unknown_space: true
-      # UYARI (18 Temmuz 2026) - bu footprint GECICI/DOGRULANMAMIS sayilmali:
-      # collision box (1150x1207x615mm) mekanik el notundan geldi ama Zehra'nin
-      # olctugu son mesh'in (tulpar_govde_final.stl) gercek bbox'i ile
-      # uyusmuyor (1166.6x1236.8x1133.2mm - ozellikle yukseklik 615 vs 1133mm).
-      # Tekerlek yaricapi da cozulmemis: mekanik not r=0.20 diyor, Talha'nin
-      # CAD olcumu r=0.166 (13-14 inc lastik tedarik listesiyle tutarli).
-      # Zehra mekanik ekibe kesin olcu sordu (bkz. CLAUDE.md) - cevap gelmeden
-      # bu footprint FINAL sayilmamali, guvenlik-kritik bir parametre.
-      # 19 Temmuz 2026: bu footprint degisirse tulpar_safety/collision_checker_node.py
-      # icindeki robot_radius_m (kose/circumscribed mesafesi) da elle guncellenmeli -
-      # iki dosya arasinda otomatik senkron yok, bkz. o dosyadaki yorum.
-      footprint: "[[0.575, 0.605], [0.575, -0.605], [-0.575, -0.605], [-0.575, 0.605]]"
+      # 20 Temmuz 2026: footprint, mekanik ekipten (Halil) gelen Fusion 360 CAD
+      # export'undan (tulpar_description.zip, 1606 parca, poses.csv) turetildi -
+      # eski "1150x1207x615mm" mekanik el notu yukseklikte ~518mm hataliydi,
+      # gercek deger 1237x1167x1133mm (iki bagimsiz yontemle capraz dogrulandi,
+      # bkz. urdf/robot.urdf.xacro'daki collision box yorumu). Yari-genislikler:
+      # uzunluk(on-arka)/2=0.6185, genislik(sag-sol)/2=0.5835.
+      # Bu footprint degisirse tulpar_safety/collision_checker_node.py
+      # icindeki robot_radius_m de elle guncellenmeli - iki dosya arasinda
+      # otomatik senkron yok, bkz. o dosyadaki yorum.
+      footprint: "[[0.6185, 0.5835], [0.6185, -0.5835], [-0.6185, -0.5835], [-0.6185, 0.5835]]"
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
@@ -251,10 +249,9 @@ local_costmap:
       width: 6
       height: 6
       resolution: 0.10
-      # GECICI/DOGRULANMAMIS - bkz. global_costmap'teki ayni footprint'in
-      # yanindaki 18 Temmuz 2026 uyarisi (tekerlek/collision box mekanik
-      # teyidi bekleniyor).
-      footprint: "[[0.575, 0.605], [0.575, -0.605], [-0.575, -0.605], [-0.575, 0.605]]"
+      # 20 Temmuz 2026: bkz. global_costmap'teki ayni footprint'in yanindaki not
+      # (Fusion CAD export'undan turetildi).
+      footprint: "[[0.6185, 0.5835], [0.6185, -0.5835], [-0.6185, -0.5835], [-0.6185, 0.5835]]"
       plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"

@@ -108,6 +108,7 @@ def generate_launch_description():
             "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
             "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/imu@sensor_msgs/msg/Imu[gz.msgs.IMU",
             "/d435if/depth/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
             "/d435if/depth/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
             "/d435if/depth/image_raw/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",

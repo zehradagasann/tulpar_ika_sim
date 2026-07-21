@@ -82,8 +82,11 @@ TESPIT_W, TESPIT_H = 1280, 720
 BITRATE_KBPS = 6000
 
 # --- ROS2 ---
-# Zehra'nin URDF'indeki kamera cercevesiyle AYNI olmali (teyit edilecek).
-ROS_FRAME_ID = "camera_link"
+# D435if TESPIT kamerasidir; tespitler onun renk akisindan geldiginde
+# bu optik frame dogrudur. DIKKAT: node su an hala Pi HQ (Argus) okuyor;
+# YOLO kolu D435if'e tasinana kadar /detections koordinatlari Pi HQ'dan gelir
+# ve bu frame ile UYUMSUZDUR -- o gecise kadar costmap'e baglamayin.
+ROS_FRAME_ID = "d435if_color_optical_frame"
 # Atis bolgesi: goruntu merkezine gore normalize yari-genislik/yukseklik.
 # LOCK_THRESHOLD_PX ile ayni fikir, ama cozunurlukten bagimsiz.
 ATIS_BOLGESI = (0.25, 0.25)

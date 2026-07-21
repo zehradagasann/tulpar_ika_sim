@@ -1,6 +1,13 @@
-# /tulpar_bt/atis_event -- Behaviour Tree'ye giden ayrik atis olayi.
+# /tulpar_kamera/atis_event -- Behaviour Tree'ye giden ayrik atis olayi.
 # Her karede DEGIL, sadece durum degistiginde yayinlanir.
 # transient_local QoS ile gec abone olan BT son durumu yine de alir.
+#
+# NOT (22 Tem): Topic ONCEDEN /tulpar_bt/atis_event idi. Talha'nin AtisYap
+# BT node'u ayni isimde std_msgs/Header yayinliyordu (BT'nin kendi "atis
+# yapildi" onayi) -- ayni topic adinda iki farkli mesaj tipi ROS2'de
+# sessizce eslesmiyordu. Bu akis BT'ye GIREN bir algilama-durumu sinyali
+# oldugu icin /tulpar_kamera/ altina tasindi; Talha'nin Header sinyali
+# ve konsol kaydi degismedi.
 #
 # NOT: ACTION_ENTER_SHOOTING_ZONE=9, Zehra'nin SignDetection.msg
 # konvansiyonuyla ayni deger. EXIT/LOST/LOCK Zehra listesinde yoktu,

@@ -1,21 +1,22 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
-from tulpar_ika_msgs.msg import SlalomTarget
+from tulpar_ika_msgs.msg import Detection2DArray, SlalomTarget
+
 from tulpar_ika_perception.slalom_core import ImageConeDetection, run_slalom_logic
-from tulpar_msgs.msg import DetectionArray
 
 
 class SlalomNode(Node):
     """/detections'i dinleyip koni ciftlerinden slalom hedefini hesaplar,
     /parkur/slalom_target'e (tulpar_ika_msgs/SlalomTarget) yayinlar.
 
-    /detections BEST_EFFORT QoS ile yayinlaniyor (Emin'in notu) - abonelik
-    de BEST_EFFORT olmali, yoksa hicbir hata vermeden sifir veri gelir.
+    /detections artik tulpar_ika_msgs/Detection2DArray (eski tulpar_msgs/
+    DetectionArray semasi Emin tarafindan kaldirildi, bkz. commit 6758e34)
+    - BEST_EFFORT QoS ile yayinlaniyor, abonelik de BEST_EFFORT olmali,
+    yoksa hicbir hata vermeden sifir veri gelir.
 
-    header.frame_id kasten Emin'in DetectionArray'inden KOPYALANMIYOR:
-    oradaki "camera_link" URDF'te olmayan bir frame (bilinen, cozulmemis
-    bir uyumsuzluk) - burada dogrudan gercek TF frame'i kullaniliyor.
+    header.frame_id sabit "d435if_color_optical_frame" - Emin'in kendi
+    detection_publisher.py'si de ayni varsayilani kullaniyor, tutarli.
     """
 
     def __init__(self) -> None:
@@ -38,7 +39,7 @@ class SlalomNode(Node):
         )
 
         self._sub = self.create_subscription(
-            DetectionArray, "/detections", self._on_detections, detections_qos,
+            Detection2DArray, "/detections", self._on_detections, detections_qos,
         )
         self._pub = self.create_publisher(SlalomTarget, "/parkur/slalom_target", 10)
 
@@ -47,17 +48,17 @@ class SlalomNode(Node):
             % (self._cone_class_name, self._target_frame_id)
         )
 
-    def _on_detections(self, msg: DetectionArray) -> None:
+    def _on_detections(self, msg: Detection2DArray) -> None:
         if not msg.image_width or not msg.image_height:
             self.get_logger().warning(
-                "DetectionArray.image_width/height bos, kare atlaniyor."
+                "Detection2DArray.image_width/height bos, kare atlaniyor."
             )
             return
 
         cones = [
             ImageConeDetection(
-                image_x=detection.center_x,
-                image_y=detection.center_y,
+                image_x=detection.center_px.x,
+                image_y=detection.center_px.y,
                 cone_color=detection.class_name,
             )
             for detection in msg.detections

@@ -4,3 +4,6 @@ install/
 log/
 worlds/*.bak
 __pycache__/
+/*.csv
+test_kanit/*.csv
+test_kanit/*.png

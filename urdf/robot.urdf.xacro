@@ -38,9 +38,17 @@
       <material name="aluminium"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0.1925" rpy="0 0 0"/>
+      <!-- 21 Temmuz 2026: eski deger (size 1.1666 1.2368 0.615, origin_z=0.1925)
+           X/Y eksenleri ters (gercek: X=1.2368 Y=1.1666, trimesh ile govde
+           mesh'inin gercek dunyaya-donusturulmus bbox'indan hesaplandi) VE
+           yukseklik hala eski/yanlis degerdeydi (0.615 - "duzeltildi"
+           denmisti ama sadece X/Y footprint'e islenmisti, bu collision box'a
+           hic yansimamis). Gercek yukseklik 1.1332m (govde mesh'inin tam Z
+           araligindan), merkez z=0.4016 - onceki kutu aracin ust yarisini
+           (turret/govde ustu) hic kapsamiyordu. -->
+      <origin xyz="0 0 0.4016" rpy="0 0 0"/>
       <geometry>
-        <box size="1.1666 1.2368 0.615"/>
+        <box size="1.2368 1.1666 1.1332"/>
       </geometry>
     </collision>
     <inertial>

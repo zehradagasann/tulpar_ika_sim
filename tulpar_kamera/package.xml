@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>tulpar_kamera</name>
+  <version>0.1.0</version>
+  <description>
+    Tulpar IKA kamera node'u: tek Argus oturumu uzerinden GStreamer tee ile
+    WebRTC video yayini (donanim H.264) ve YOLO/PID hedef tespiti.
+  </description>
+  <maintainer email="emnkyc63@gmail.com">Emin Kuyucu</maintainer>
+  <license>MIT</license>
+
+  <!--
+    Sistem bagimliliklari (GStreamer, libnice, python3-gi, websockets) bilerek
+    burada listelenmedi: rosdep bu apt anahtarlarinin bir kismini cozemiyor ve
+    "rosdep install" calistiran herkesin kurulumunu bu paket yuzunden hataya
+    dusuruyordu. Kurulum adimlari README.md dosyasinda.
+  -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

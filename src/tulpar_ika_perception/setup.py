@@ -65,6 +65,11 @@ setup(
                 'tulpar_ika_perception.'
                 'brightness_filter_node:main'
             ),
+            (
+                'slalom_node = '
+                'tulpar_ika_perception.'
+                'slalom_node:main'
+            ),
         ],
     },
 )

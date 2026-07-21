@@ -18,6 +18,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SignDetection.msg"
   "msg/SignDetectionArray.msg"
   "msg/ConeDetection.msg"
+  "msg/SlalomTarget.msg"
   "msg/SpeedDecision.msg"
   "msg/TerrainSpeedDecision.msg"
 

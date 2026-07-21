@@ -25,6 +25,9 @@ setup(
     entry_points={
         'console_scripts': [
             'collision_checker = tulpar_safety.collision_checker_node:main',
+            'yon_duzeltme_node = tulpar_safety.yon_duzeltme_node:main',
+            'egim_feedforward_node = tulpar_safety.egim_feedforward_node:main',
+            'yan_egim_izleme_node = tulpar_safety.yan_egim_izleme_node:main',
         ],
     },
 )

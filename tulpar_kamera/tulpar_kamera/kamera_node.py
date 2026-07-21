@@ -23,7 +23,7 @@ gorev boyunca acik kalir. MIMARI (22 Tem itibariyle iki bagimsiz kamera):
         |
         +-- renk karesi -> YOLO -> find_shooting_target -> PID (pan/tilt)
         +-- hizalanmis derinlik karesi -> bbox merkezinde derinlik -> Det.depth_m
-        +-- ROS2 /detections + /tulpar_bt/atis_event (DetectionPublisher)
+        +-- ROS2 /detections + /tulpar_kamera/atis_event (DetectionPublisher)
 
 RealSense kendi USB3 baglantisini kullandigi icin Argus'tan tamamen
 bagimsiz - YOLO/PID/ROS artik Pi HQ'nun tek-Argus-oturumu kisitina hic
@@ -528,7 +528,7 @@ class KameraNode:
                     buyukluk = (hata_x ** 2 + hata_y ** 2) ** 0.5
                     durum = "LOCKED" if buyukluk < LOCK_THRESHOLD_PX else "TRACKING"
 
-                    # /detections ve /tulpar_bt/atis_event yukarida yayinlandi.
+                    # /detections ve /tulpar_kamera/atis_event yukarida yayinlandi.
                     # Konsol nisan artisini kendi ciziyor, o yuzden videoya overlay
                     # basmiyoruz - sadece koordinat/durum verisi yayiliyor.
                     if sayac % 15 == 0:

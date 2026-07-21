@@ -2,8 +2,8 @@
 """
 detection_publisher.py -- Tulpar IKA perception -> ROS2 koprusu.
 
-/detections           tulpar_ika_msgs/Detection2DArray  (BEST_EFFORT, depth 1)
-/tulpar_bt/atis_event tulpar_ika_msgs/AtisEvent          (RELIABLE + TRANSIENT_LOCAL)
+/detections            tulpar_ika_msgs/Detection2DArray  (BEST_EFFORT, depth 1)
+/tulpar_kamera/atis_event tulpar_ika_msgs/AtisEvent       (RELIABLE + TRANSIENT_LOCAL)
 
 MIMARI: Bu bir ROS2 node dosyasi DEGIL, tulpar_kamera_node.py process'inin
 icinde calisan modul. Argus boot basina bir kez aciliyor; ayri node ikinci
@@ -12,7 +12,15 @@ oturum acip dmabuf_fd -1 ile patlardi. rclpy kendi thread'inde spin eder.
 SEMA: Zehra'nin mevcut tulpar_ika_msgs/Detection2D semasi kullaniliyor
 (ekip standardi). Atisa ozel turetilmis alanlar (merkez hatasi, atis-bolgesi
 bayragi) Detection2D'de YOK; tuketici center_px'ten kendi hesaplar. Atis
-mantigi /tulpar_bt/atis_event'te.
+mantigi /tulpar_kamera/atis_event'te.
+
+NOT (22 Tem): Bu topic ONCEDEN /tulpar_bt/atis_event idi. Talha'nin
+AtisYap BT node'u AYNI isimde std_msgs/Header yayinliyor (BT'nin kendi
+"atis yapildi" onayi, tulpar_konsol_kayit bunu Header olarak dinliyor) --
+ayni topic adinda iki farkli mesaj tipi ROS2'de sessizce eslesmiyordu.
+/tulpar_bt/ onegi "BT'nin urettigi" anlamina geliyor; bu akis BT'ye GIREN
+bir algilama-durumu sinyali oldugu icin /tulpar_kamera/ altina tasindi.
+Talha'nin Header sinyali ve konsol kaydi degismedi.
 """
 
 from __future__ import annotations
@@ -69,7 +77,7 @@ class DetectionPublisher:
         node_name: str = "tulpar_kamera_perception",
         frame_id: str = "d435if_color_optical_frame",
         detections_topic: str = "/detections",
-        atis_topic: str = "/tulpar_bt/atis_event",
+        atis_topic: str = "/tulpar_kamera/atis_event",
         shooting_zone: Tuple[float, float] = (0.25, 0.25),
         min_confidence_for_event: float = 0.55,
         lock_stable_frames: int = 15,

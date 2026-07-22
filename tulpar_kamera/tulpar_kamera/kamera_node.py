@@ -83,8 +83,12 @@ YAYIN_W, YAYIN_H, YAYIN_FPS = 1920, 1080, 30
 # Tespit (RealSense D435if) cozunurlugu - YOLO'ya giren renk karesi
 TESPIT_W, TESPIT_H, TESPIT_FPS = 1280, 720, 30
 
-# KTR / Gun4: 7.5 Mbps sinirinin altinda kalinacak. Guvenlik payiyla 6 Mbps.
-BITRATE_KBPS = 6000
+# KTR / Gun4: 7.5 Mbps toplam sinirinin altinda kalinacak. Uc kamera
+# paylasiyor: Pi HQ 5000 + Sjcam (arka_kamera_node.py) 900 + D435if
+# (asagida ON_KAMERA_BITRATE_KBPS) 1500 = 7400 kbps.
+BITRATE_KBPS = 5000
+# D435if'in konsola giden onizleme yayini (asagidaki appsrc hatti).
+ON_KAMERA_BITRATE_KBPS = 1500
 
 # --- RealSense derinlik ---
 # bbox merkezi etrafinda (2*yarim+1)^2 piksellik pencerede medyan alinir -
@@ -121,6 +125,125 @@ PIPELINE_DESC = (
     "queue leaky=downstream max-size-buffers=60 ! "
     'capsfilter caps="application/x-rtp,media=video,encoding-name=H264,payload=96"'
 )
+
+# D435if onizleme hatti: appsrc, RealSense thread'inin (tespit_dongusu)
+# YOLO'ya besledigi AYNI BGR kareleri alir - RealSense donanimi ayni anda
+# tek process'in pipeline'ini actigi icin ikinci bir pyrealsense2 process'i
+# ACAMAYIZ; bu yuzden ayri bir arka_kamera_node.py yerine appsrc ile
+# mevcut thread'e ek bir cikis ekleniyor.
+ON_KAMERA_PIPELINE_DESC = (
+    "appsrc name=on_kamera_src is-live=true format=time do-timestamp=true ! "
+    "video/x-raw,format=BGR,width={w},height={h},framerate={fps}/1 ! "
+    # nvvidconv'un donanim (VIC) yolu BGR'yi desteklemiyor ("RGB/BGR Format
+    # transformation is not supported by VIC use GPU instead" hatasi verir).
+    # videoconvert'i I420'ye ZORLAMAK gerekiyor - caps verilmezse negotiation
+    # BGR'yi oldugu gibi gecirebiliyor ve ayni hataya dusuyor. Jetson'da
+    # izole gst-launch testiyle dogrulandi (22 Tem).
+    "videoconvert ! video/x-raw,format=I420 ! nvvidconv ! "
+    "video/x-raw(memory:NVMM),format=NV12 ! "
+    "nvv4l2h264enc bitrate={bitrate} insert-sps-pps=true idrinterval=30 maxperf-enable=true ! "
+    "h264parse config-interval=-1 ! "
+    "rtph264pay config-interval=1 pt=96 ! "
+    "queue leaky=downstream max-size-buffers=60 ! "
+    'capsfilter caps="application/x-rtp,media=video,encoding-name=H264,payload=96"'
+)
+
+
+class WebRtcYayinAyagi:
+    """Bir webrtcbin + signaling durumunu kapsulleyen yardimci sinif.
+
+    NEDEN VAR: kamera_node.py artik iki bagimsiz WebRTC hatti tasiyor (Pi HQ
+    ve D435if onizleme), her birinin kendi offer/ICE durumu ve kendi
+    signaling WebSocket baglantisi var. Pi HQ'nun (zaten donanimda test
+    edilmis, calisir durumdaki) kendi metodlarina DOKUNULMADI - risk almamak
+    icin D435if hatti bu ayri, kucuk yardimci sinifi kullanir. Mantik
+    birebir Pi HQ'nunkiyle ayni (kopyalanmadi, tek yerde), sadece ikinci
+    hat icin parametrik hale getirildi.
+    """
+
+    def __init__(self, isim, webrtc, sink_pad, send_signal_fn):
+        self.isim = isim
+        self.webrtc = webrtc
+        self.sink_pad = sink_pad
+        self._send_signal_fn = send_signal_fn  # payload(dict) -> None
+
+        self.local_offer_sdp = None
+        self.local_ice_candidates = []
+        self._offer_denemesi = 0
+
+        webrtc.connect("on-negotiation-needed", self._on_negotiation_needed)
+        webrtc.connect("on-ice-candidate", self._on_ice_candidate)
+
+    def _on_negotiation_needed(self, webrtc):
+        log.info("[%s] Negotiation gerekli", self.isim)
+        self._offer_denemesi = 0
+        self._offer_dene()
+
+    def _offer_dene(self):
+        self._offer_denemesi += 1
+        if self._offer_denemesi > 20:
+            log.error("[%s] Offer 20 denemede uretilemedi, pes edildi", self.isim)
+            return False
+
+        caps = self.sink_pad.get_current_caps()
+        if caps is None:
+            log.info("[%s] Sink pad caps'i henuz hazir degil (deneme %d), 300ms sonra tekrar",
+                     self.isim, self._offer_denemesi)
+            GLib.timeout_add(300, self._offer_dene)
+            return False
+
+        log.info("[%s] Offer olusturuluyor (caps: %s)", self.isim, caps.to_string()[:60])
+        promise = Gst.Promise.new_with_change_func(self._on_offer_created, self.webrtc, None)
+        self.webrtc.emit("create-offer", None, promise)
+        return False
+
+    def _on_offer_created(self, promise, webrtc, _):
+        promise.wait()
+        reply = promise.get_reply()
+        offer = reply.get_value("offer") if reply is not None else None
+
+        if offer is None or offer.sdp is None:
+            log.warning("[%s] create-offer bos dondu (deneme %d), 300ms sonra tekrar denenecek",
+                        self.isim, self._offer_denemesi)
+            GLib.timeout_add(300, self._offer_dene)
+            return
+
+        webrtc.emit("set-local-description", offer, Gst.Promise.new())
+        self.local_offer_sdp = offer.sdp.as_text()
+        log.info("[%s] Offer olusturuldu, gonderiliyor", self.isim)
+        self._send_signal_fn({"type": "offer", "sdp": self.local_offer_sdp})
+
+    def _on_ice_candidate(self, webrtc, mline_index, candidate):
+        payload = {
+            "type": "ice-candidate",
+            "candidate": {"candidate": candidate, "sdpMLineIndex": mline_index},
+        }
+        self.local_ice_candidates.append(payload)
+        self._send_signal_fn(payload)
+
+    def replay_local_state(self):
+        if self.local_offer_sdp is None:
+            log.info("[%s] Henuz offer uretilmemis, tekrar gonderilecek bir sey yok", self.isim)
+            return
+        log.info("[%s] Offer + %d ICE adayi tekrar gonderiliyor", self.isim, len(self.local_ice_candidates))
+        self._send_signal_fn({"type": "offer", "sdp": self.local_offer_sdp})
+        for cand in self.local_ice_candidates:
+            self._send_signal_fn(cand)
+
+    def handle_signal(self, msg):
+        mtype = msg.get("type")
+        if mtype == "izleyici-baglandi":
+            log.info("[%s] Izleyici baglandi bildirimi alindi", self.isim)
+            self.replay_local_state()
+        elif mtype == "answer":
+            log.info("[%s] Answer alindi, remote description ayarlaniyor", self.isim)
+            _, sdpmsg = GstSdp.SDPMessage.new()
+            GstSdp.sdp_message_parse_buffer(bytes(msg["sdp"].encode()), sdpmsg)
+            answer = GstWebRTC.WebRTCSessionDescription.new(GstWebRTC.WebRTCSDPType.ANSWER, sdpmsg)
+            self.webrtc.emit("set-remote-description", answer, Gst.Promise.new())
+        elif mtype == "ice-candidate" and msg.get("candidate"):
+            cand = msg["candidate"]
+            self.webrtc.emit("add-ice-candidate", cand.get("sdpMLineIndex", 0), cand.get("candidate", ""))
 
 
 class PID:
@@ -194,8 +317,10 @@ def _derinlik_olc(depth_frame, cx, cy,
 
 
 class KameraNode:
-    def __init__(self, signaling_url, loop, tespit_aktif=True, ros_aktif=True):
+    def __init__(self, signaling_url, loop, tespit_aktif=True, ros_aktif=True,
+                 on_kamera_signaling_url=None):
         self.signaling_url = signaling_url
+        self.on_kamera_signaling_url = on_kamera_signaling_url
         self.loop = loop
         self.tespit_aktif = tespit_aktif
         # ros_aktif=False iken _NullPublisher doner; publish() no-op olur.
@@ -207,6 +332,7 @@ class KameraNode:
             logger=log,
         )
         self.ws = None
+        self.on_kamera_ws = None
         self.calisiyor = True
 
         # Yayinci genelde konsoldan once ayaga kalkar; o sirada uretilen offer ve
@@ -217,8 +343,15 @@ class KameraNode:
         self.webrtc_sink_pad = None
         self._offer_denemesi = 0
 
+        # D435if onizleme hatti - on_kamera_signaling_url verilmezse None
+        # kalir, tespit_dongusu bu durumda appsrc'ye kare basmaz.
+        self.on_kamera_appsrc = None
+        self.on_kamera_leg = None
+
         Gst.init(None)
         self._build_pipeline()
+        if self.on_kamera_signaling_url:
+            self._build_on_kamera_pipeline()
 
     # ---------------- pipeline kurulumu ----------------
 
@@ -262,6 +395,50 @@ class KameraNode:
         bus.add_signal_watch()
         bus.connect("message", self._on_bus_message)
 
+    def _build_on_kamera_pipeline(self):
+        """D435if onizleme hatti: appsrc -> encoder -> ikinci webrtcbin.
+
+        Ayni ust-duzey self.pipeline'a eklenir (ikinci bir Gst.Pipeline/bus/
+        mainloop acmaya gerek yok, Pi HQ hattiyla ayni saat/veriyolunu
+        paylasir ama TAMAMEN AYRI bir dal - birbirlerine baglanmazlar).
+        """
+        desc = ON_KAMERA_PIPELINE_DESC.format(
+            w=TESPIT_W, h=TESPIT_H, fps=TESPIT_FPS,
+            bitrate=ON_KAMERA_BITRATE_KBPS * 1000,
+        )
+        log.info("D435if onizleme pipeline:\n%s", desc)
+
+        src_bin = Gst.parse_bin_from_description(desc, True)
+        if src_bin is None:
+            raise RuntimeError("D435if onizleme bin'i olusturulamadi")
+
+        self.on_kamera_appsrc = src_bin.get_by_name("on_kamera_src")
+        if self.on_kamera_appsrc is None:
+            raise RuntimeError("on_kamera_src appsrc bulunamadi")
+
+        on_kamera_webrtc = Gst.ElementFactory.make("webrtcbin", "on_kamera_webrtcbin")
+        if on_kamera_webrtc is None:
+            raise RuntimeError("D435if webrtcbin olusturulamadi")
+        on_kamera_webrtc.set_property("bundle-policy", GstWebRTC.WebRTCBundlePolicy.MAX_BUNDLE)
+        on_kamera_webrtc.set_property("stun-server", STUN_SERVER)
+
+        self.pipeline.add(src_bin)
+        self.pipeline.add(on_kamera_webrtc)
+
+        src_pad = self._bin_src_pad(src_bin)
+        sink_pad = self._request_webrtc_sink_pad(on_kamera_webrtc)
+        if sink_pad is None:
+            raise RuntimeError("D435if webrtcbin sink_%u request pad alinamadi")
+
+        ret = src_pad.link(sink_pad)
+        if ret != Gst.PadLinkReturn.OK:
+            raise RuntimeError(f"D435if bin -> webrtcbin link basarisiz: {ret.value_nick}")
+        log.info("D435if onizleme -> webrtcbin baglantisi kuruldu")
+
+        self.on_kamera_leg = WebRtcYayinAyagi(
+            "d435if", on_kamera_webrtc, sink_pad, self._send_signal_on_kamera,
+        )
+
     def _bin_src_pad(self, src_bin):
         """Bin'in disariya acilan (ghost) src pad'ini bulur.
 
@@ -280,28 +457,32 @@ class KameraNode:
             return pad
         raise RuntimeError("Kaynak bin'in src pad'i bulunamadi")
 
-    def _request_webrtc_sink_pad(self):
+    def _request_webrtc_sink_pad(self, webrtc=None):
         """webrtcbin sink_%u request pad'i. GStreamer/PyGObject surumlerine gore
         API davranisi degistigi icin birkac yontem sirayla denenir.
+
+        `webrtc` verilmezse self.webrtc (Pi HQ) kullanilir - D435if hatti
+        kendi webrtcbin'ini acikca gecirir, ayni mantigi tekrar yazmaz.
 
         NOT: Bu pad'in None donmesinin en sik sebebi eksik libnice paketidir
         (`sudo apt install gstreamer1.0-nice`). Log'da
         "libnice elements are not available" gorursen sebep budur.
         """
+        webrtc = webrtc if webrtc is not None else self.webrtc
         rtp_caps = Gst.Caps.from_string(
             "application/x-rtp,media=video,encoding-name=H264,payload=96,clock-rate=90000"
         )
-        templ = self.webrtc.get_pad_template("sink_%u")
+        templ = webrtc.get_pad_template("sink_%u")
 
         denemeler = []
         if templ is not None:
             denemeler += [
-                ("request_pad(templ, None, caps)", lambda: self.webrtc.request_pad(templ, None, rtp_caps)),
-                ("request_pad(templ, 'sink_0', caps)", lambda: self.webrtc.request_pad(templ, "sink_0", rtp_caps)),
-                ("request_pad(templ, None, None)", lambda: self.webrtc.request_pad(templ, None, None)),
+                ("request_pad(templ, None, caps)", lambda: webrtc.request_pad(templ, None, rtp_caps)),
+                ("request_pad(templ, 'sink_0', caps)", lambda: webrtc.request_pad(templ, "sink_0", rtp_caps)),
+                ("request_pad(templ, None, None)", lambda: webrtc.request_pad(templ, None, None)),
             ]
-        if hasattr(self.webrtc, "request_pad_simple"):
-            denemeler.append(("request_pad_simple('sink_%u')", lambda: self.webrtc.request_pad_simple("sink_%u")))
+        if hasattr(webrtc, "request_pad_simple"):
+            denemeler.append(("request_pad_simple('sink_%u')", lambda: webrtc.request_pad_simple("sink_%u")))
 
         for isim, fn in denemeler:
             try:
@@ -403,6 +584,11 @@ class KameraNode:
             return
         asyncio.run_coroutine_threadsafe(self.ws.send(json.dumps(payload)), self.loop)
 
+    def _send_signal_on_kamera(self, payload):
+        if self.on_kamera_ws is None:
+            return
+        asyncio.run_coroutine_threadsafe(self.on_kamera_ws.send(json.dumps(payload)), self.loop)
+
     def handle_signal(self, msg):
         mtype = msg.get("type")
 
@@ -420,6 +606,36 @@ class KameraNode:
         elif mtype == "ice-candidate" and msg.get("candidate"):
             cand = msg["candidate"]
             self.webrtc.emit("add-ice-candidate", cand.get("sdpMLineIndex", 0), cand.get("candidate", ""))
+
+    def _appsrc_kare_gonder(self, frame):
+        """YOLO'ya giden AYNI BGR kareyi D435if onizleme appsrc'sine basar.
+
+        do-timestamp=true oldugu icin appsrc PTS'i kendisi, push anindaki
+        pipeline saatinden turetir - burada elle zaman damgasi hesabina
+        gerek yok.
+
+        ONEMLI (22 Tem, gercek OOM riski yasandi): push-buffer donus degeri
+        kontrol EDILMELI. Asagi yondeki eleman (ornegin nvvidconv) caps
+        hatasiyla surekli reddederse appsrc/GStreamer bellekte buffer
+        biriktirmeye devam eder - 90 saniyede 13GB/16GB RAM'e ulasti, Jetson
+        OOM'a kilitlenmeye ramak kalmisti. Hata OK degilse hat sessizce
+        devre disi birakilir (appsrc'ye artik push edilmez), tespit dongusu
+        etkilenmeden devam eder.
+        """
+        try:
+            buf = Gst.Buffer.new_wrapped(frame.tobytes())
+            donus = self.on_kamera_appsrc.emit("push-buffer", buf)
+        except Exception as e:  # noqa: BLE001
+            log.warning("D435if onizleme karesi gonderilemedi (istisna): %s", e)
+            self.on_kamera_appsrc = None
+            return
+        if donus != Gst.FlowReturn.OK:
+            log.error(
+                "D435if onizleme hatti push-buffer basarisiz (%s) - hat devre "
+                "disi birakiliyor, bellek sizintisini onlemek icin artik kare "
+                "gonderilmeyecek.", donus,
+            )
+            self.on_kamera_appsrc = None
 
     # ---------------- tespit dongusu (RealSense D435if) ----------------
 
@@ -480,6 +696,9 @@ class KameraNode:
                 # duzeltmesiyle ayni gerekce).
                 capture_time_ns = time.time_ns()
                 frame = np.asanyarray(color_frame.get_data())
+
+                if self.on_kamera_appsrc is not None:
+                    self._appsrc_kare_gonder(frame)
 
                 simdi = GLib.get_monotonic_time()
                 dt = (simdi - onceki) / 1_000_000.0  # mikrosaniye -> saniye
@@ -587,9 +806,47 @@ async def signaling_loop(node, signaling_url):
             await asyncio.sleep(3)
 
 
+async def on_kamera_signaling_loop(node, signaling_url):
+    """Pi HQ'nunkiyle ayni protokol/retry mantigi, D435if hatti icin.
+
+    Ayri bir websocket baglantisi - node.on_kamera_ws'i gunceller ve gelen
+    mesajlari node.handle_signal (Pi HQ) yerine node.on_kamera_leg.handle_signal'a
+    yonlendirir. signaling_server.py path'e gore ayirdigi icin bu iki hat
+    birbirine hic karismaz.
+    """
+    while True:
+        try:
+            log.info("[d435if] Signaling sunucusuna baglaniliyor: %s", signaling_url)
+            async with websockets.connect(signaling_url) as ws:
+                node.on_kamera_ws = ws
+                await ws.send(json.dumps({"type": "yayinci-merhaba"}))
+                log.info("[d435if] Signaling baglantisi kuruldu")
+                async for raw in ws:
+                    try:
+                        msg = json.loads(raw)
+                    except json.JSONDecodeError:
+                        continue
+                    node.on_kamera_leg.handle_signal(msg)
+        except (websockets.exceptions.ConnectionClosed, OSError) as e:
+            log.warning("[d435if] Signaling koptu/kurulamadi (%s), 3sn sonra tekrar", e)
+            node.on_kamera_ws = None
+            await asyncio.sleep(3)
+
+
+async def run_signaling(node, signaling_url):
+    """Pi HQ signaling loop'unu, verilmisse D435if signaling loop'uyla
+    birlikte es zamanli calistirir."""
+    gorevler = [signaling_loop(node, signaling_url)]
+    if node.on_kamera_signaling_url:
+        gorevler.append(on_kamera_signaling_loop(node, node.on_kamera_signaling_url))
+    await asyncio.gather(*gorevler)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--signaling", required=True, help="ws://<ip>:8080/yer-istasyonu-video")
+    parser.add_argument("--on-kamera-signaling", default=None,
+                        help="ws://<ip>:8080/yer-istasyonu-on-kamera (D435if onizleme - verilmezse bu hat acilmaz)")
     parser.add_argument("--tespit-yok", action="store_true", help="YOLO/PID'i calistirma, sadece video yayinla")
     parser.add_argument("--ros-yok", action="store_true",
                         help="ROS2 yayinini kapat (rclpy hic import edilmez)")
@@ -603,11 +860,12 @@ def main():
 
     node = KameraNode(args.signaling, asyncio_loop,
                       tespit_aktif=not args.tespit_yok,
-                      ros_aktif=not args.ros_yok)
+                      ros_aktif=not args.ros_yok,
+                      on_kamera_signaling_url=args.on_kamera_signaling)
     node.start()
 
     try:
-        asyncio_loop.run_until_complete(signaling_loop(node, args.signaling))
+        asyncio_loop.run_until_complete(run_signaling(node, args.signaling))
     except KeyboardInterrupt:
         log.info("Durduruluyor...")
     finally:

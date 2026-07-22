@@ -1,13 +1,17 @@
 import './App.css'
 import TelemetriPaneli from './components/TelemetriPaneli'
 import VideoAlici from './components/VideoAlici'
+import { SIGNALING_SERVER_URL, SIGNALING_SERVER_URL_ARKA } from './config'
 
 function App() {
   return (
     <>
       <h1>TULPAR İKA Yer İstasyonu</h1>
       <TelemetriPaneli />
-      <VideoAlici />
+      <div className="video-izgara">
+        <VideoAlici signalingUrl={SIGNALING_SERVER_URL} baslik="Atış Kamerası" />
+        <VideoAlici signalingUrl={SIGNALING_SERVER_URL_ARKA} baslik="Arka Kamera" />
+      </div>
     </>
   )
 }

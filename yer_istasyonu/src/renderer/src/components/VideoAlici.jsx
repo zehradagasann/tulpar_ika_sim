@@ -11,7 +11,14 @@ const YENIDEN_DENEME_MS = 3000
 // istemci baglaninca {type:'izleyici-merhaba'} gonderir, sunucudan
 // {type:'offer', sdp} bekler, cevap olarak {type:'answer', sdp} doner;
 // ICE adaylari {type:'ice-candidate', candidate} ile karsilikli iletilir.
-function VideoAlici() {
+//
+// COKLU KAMERA (22 Tem): signaling_server.py artik path bazli coklu kanal
+// destekliyor - her kamera kendi yayinci/izleyici ciftine sahip, birbirine
+// karismiyor. Bu yuzden bilesen artik `signalingUrl`/`baslik` props'u ile
+// parametrik: ayni bilesenin birden fazla ornegi (atis kamerasi, arka
+// kamera, ...) farkli signaling path'lerine baglanarak App.jsx'te yan yana
+// gosterilebilir. Prop verilmezse eski tek-kamera varsayilanina (SIGNALING_SERVER_URL) duser.
+function VideoAlici({ signalingUrl = SIGNALING_SERVER_URL, baslik = 'Video' }) {
   const videoRef = useRef(null)
   const pcRef = useRef(null)
   const wsRef = useRef(null)
@@ -83,7 +90,7 @@ function VideoAlici() {
 
     let ws
     try {
-      ws = new WebSocket(SIGNALING_SERVER_URL)
+      ws = new WebSocket(signalingUrl)
     } catch (err) {
       yenidenDene()
       return
@@ -122,7 +129,7 @@ function VideoAlici() {
 
   return (
     <section className="panel video-alici">
-      <h2>Video</h2>
+      <h2>{baslik}</h2>
       {!bagli && <p className="durum-mesaji">{mesaj}</p>}
       <video ref={videoRef} autoPlay playsInline muted controls />
     </section>

@@ -2,8 +2,9 @@
 """
 detection_publisher.py -- Tulpar IKA perception -> ROS2 koprusu.
 
-/detections            tulpar_ika_msgs/Detection2DArray  (BEST_EFFORT, depth 1)
-/tulpar_kamera/atis_event tulpar_ika_msgs/AtisEvent       (RELIABLE + TRANSIENT_LOCAL)
+/detections               tulpar_ika_msgs/Detection2DArray (BEST_EFFORT, depth 1)
+/tulpar_kamera/atis_event tulpar_ika_msgs/AtisEvent        (RELIABLE + TRANSIENT_LOCAL)
+/tulpar_kamera/taret_pid  tulpar_ika_msgs/TaretPid         (BEST_EFFORT, depth 1)
 
 MIMARI: Bu bir ROS2 node dosyasi DEGIL, tulpar_kamera_node.py process'inin
 icinde calisan modul. Argus boot basina bir kez aciliyor; ayri node ikinci
@@ -21,6 +22,12 @@ ayni topic adinda iki farkli mesaj tipi ROS2'de sessizce eslesmiyordu.
 /tulpar_bt/ onegi "BT'nin urettigi" anlamina geliyor; bu akis BT'ye GIREN
 bir algilama-durumu sinyali oldugu icin /tulpar_kamera/ altina tasindi.
 Talha'nin Header sinyali ve konsol kaydi degismedi.
+
+TARET_PID (22 Tem, Talha'nin tulpar_turret_bridge paketiyle sozlesme):
+pan_derece/tilt_derece MUTLAK ACI DEGIL - PID.update()'in o karedeki
+ciktisi (delta). Birikimli aciya cevirme + ±90° kirpma turret_bridge'in
+sorumlulugunda. hedef_var=False iken bridge acida DEGISIKLIK YAPMAZ -
+kamera_node.py'de PID zaten resetlendigi icin delta anlamsiz olur.
 """
 
 from __future__ import annotations
@@ -60,6 +67,7 @@ class Det:
 class _NullPublisher:
     ok = False
     def publish(self, *_a, **_kw): return None
+    def publish_taret_pid(self, *_a, **_kw): return None
     def shutdown(self): pass
 
 
@@ -78,6 +86,7 @@ class DetectionPublisher:
         frame_id: str = "d435if_color_optical_frame",
         detections_topic: str = "/detections",
         atis_topic: str = "/tulpar_kamera/atis_event",
+        taret_pid_topic: str = "/tulpar_kamera/taret_pid",
         shooting_zone: Tuple[float, float] = (0.25, 0.25),
         min_confidence_for_event: float = 0.55,
         lock_stable_frames: int = 15,
@@ -90,12 +99,13 @@ class DetectionPublisher:
         import rclpy
         from rclpy.qos import (DurabilityPolicy, HistoryPolicy, QoSProfile,
                                ReliabilityPolicy)
-        from tulpar_ika_msgs.msg import AtisEvent, Detection2D, Detection2DArray
+        from tulpar_ika_msgs.msg import AtisEvent, Detection2D, Detection2DArray, TaretPid
 
         self._rclpy = rclpy
         self._AtisEvent = AtisEvent
         self._Detection2D = Detection2D
         self._Detection2DArray = Detection2DArray
+        self._TaretPid = TaretPid
 
         self._frame_id = frame_id
         self._zone_w, self._zone_h = shooting_zone
@@ -128,6 +138,8 @@ class DetectionPublisher:
 
         self._pub_det = self._node.create_publisher(Detection2DArray, detections_topic, fast)
         self._pub_evt = self._node.create_publisher(AtisEvent, atis_topic, sticky)
+        # turret_bridge_node.py'nin abonelik QoS'uyla birebir ayni (fast).
+        self._pub_taret_pid = self._node.create_publisher(TaretPid, taret_pid_topic, fast)
 
         # Detection2D.source = SOURCE_YOLO. Sabit runtime'da okunur ki
         # Zehra sema degeri degistirirse burasi otomatik uyumlu kalsin.
@@ -139,7 +151,8 @@ class DetectionPublisher:
         self._thread = threading.Thread(target=self._spin, name="rclpy-spin", daemon=True)
         self._thread.start()
         self._info(f"ROS2 yayini acik: {detections_topic} (Detection2DArray/best_effort), "
-                   f"{atis_topic} (AtisEvent/reliable)")
+                   f"{atis_topic} (AtisEvent/reliable), "
+                   f"{taret_pid_topic} (TaretPid/best_effort)")
 
     def _info(self, msg: str) -> None:
         if self._log is not None:
@@ -212,6 +225,24 @@ class DetectionPublisher:
         self._pub_det.publish(arr)
         self._update_events(detections, image_size, stamp)
         return primary
+
+    def publish_taret_pid(self, hedef_var: bool, pan_derece: float = 0.0,
+                          tilt_derece: float = 0.0, confidence: float = 0.0,
+                          capture_time_ns: Optional[int] = None) -> None:
+        """/tulpar_kamera/taret_pid yayinlar - turret_bridge_node.py'nin
+        sozlesmesiyle birebir (bkz. modul docstring'i). pan_derece/tilt_derece
+        DELTA'dir, mutlak aci degil - PID.update()'in dogrudan ciktisi.
+        hedef_var=False iken bridge acida degisiklik yapmaz, o yuzden
+        pan/tilt/confidence degerleri onemsizdir (varsayilan 0.0 yeterli).
+        """
+        msg = self._TaretPid()
+        msg.header.stamp = self._stamp(capture_time_ns)
+        msg.header.frame_id = self._frame_id
+        msg.hedef_var = bool(hedef_var)
+        msg.pan_derece = float(pan_derece)
+        msg.tilt_derece = float(tilt_derece)
+        msg.confidence = float(confidence)
+        self._pub_taret_pid.publish(msg)
 
     def _in_zone(self, d: Det, image_size) -> bool:
         w, h = image_size

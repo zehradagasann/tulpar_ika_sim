@@ -746,6 +746,10 @@ class KameraNode:
                     tilt = pid_tilt.update(hata_y, dt)
                     buyukluk = (hata_x ** 2 + hata_y ** 2) ** 0.5
                     durum = "LOCKED" if buyukluk < LOCK_THRESHOLD_PX else "TRACKING"
+                    self.ros.publish_taret_pid(
+                        hedef_var=True, pan_derece=pan, tilt_derece=tilt,
+                        confidence=conf, capture_time_ns=capture_time_ns,
+                    )
 
                     # /detections ve /tulpar_kamera/atis_event yukarida yayinlandi.
                     # Konsol nisan artisini kendi ciziyor, o yuzden videoya overlay
@@ -758,6 +762,7 @@ class KameraNode:
                 else:
                     pid_pan.reset()
                     pid_tilt.reset()
+                    self.ros.publish_taret_pid(hedef_var=False, capture_time_ns=capture_time_ns)
                     if sayac % 30 == 0:
                         log.info("[NO TARGET] shooting_target tespit edilmedi")
 

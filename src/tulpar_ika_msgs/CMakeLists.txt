@@ -16,6 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Detection2D.msg"
   "msg/Detection2DArray.msg"
   "msg/AtisEvent.msg"
+  "msg/TaretPid.msg"
   "msg/SignDetection.msg"
   "msg/SignDetectionArray.msg"
   "msg/ConeDetection.msg"

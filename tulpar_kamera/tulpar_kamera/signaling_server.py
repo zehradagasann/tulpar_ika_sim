@@ -14,9 +14,13 @@ protokolle bire bir uyumludur:
     iki taraf da ICE adaylarini gonderir -> {"type": "ice-candidate", "candidate": {...}}
     sunucu bu mesajlari karsi tarafa oldugu gibi iletir (relay)
 
-Su an icin tek yayinci (Jetson) + tek izleyici (konsol) varsayimiyla yazildi.
-Birden fazla izleyici gerekirse (ornegin birden fazla konsol ayni anda izlerse)
-state.viewer tekil degisken yerine bir sozluk/liste yapisina genisletilmelidir.
+COKLU KANAL (22 Tem itibariyle): Her WebSocket baglanti yolu (path) kendi
+bagimsiz yayinci/izleyici cifti olan ayri bir "kanal". Ayni process/port
+uzerinden birden fazla kamera akisi (orn. /yer-istasyonu-video = Pi HQ atis,
+/yer-istasyonu-arka-kamera = Sjcam arka) es zamanli calisabilir; bir
+kanaldaki yayinci/izleyici digerini gormez. Yeni bir kamera eklerken bu
+dosyaya dokunmaya gerek yok - sadece yayinci ve konsol tarafi ayni yeni path
+uzerinde anlassin yeter.
 
 Calistirma:
     pip3 install websockets
@@ -38,16 +42,24 @@ import websockets
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [signaling] %(message)s")
 log = logging.getLogger("signaling")
 
-SIGNAL_PATH = "/yer-istasyonu-video"
+VARSAYILAN_YOL = "/yer-istasyonu-video"
 
 
-class SignalingState:
+class KanalDurumu:
     def __init__(self):
         self.broadcaster = None  # Jetson gonderici baglantisi
         self.viewer = None       # Konsol (Electron) baglantisi
 
 
-state = SignalingState()
+kanallar: dict[str, KanalDurumu] = {}
+
+
+def kanal_al(path: str) -> KanalDurumu:
+    """Path basina bir KanalDurumu - yoksa olusturur. Boylece her kamera
+    kendi yayinci/izleyici ciftine sahip olur, birbirine karismaz."""
+    if path not in kanallar:
+        kanallar[path] = KanalDurumu()
+    return kanallar[path]
 
 
 async def safe_send(ws, payload: dict):
@@ -60,9 +72,11 @@ async def safe_send(ws, payload: dict):
 
 
 async def handler(websocket):
+    path = websocket.request.path if websocket.request is not None else VARSAYILAN_YOL
+    state = kanal_al(path)
     role = None
     peer = getattr(websocket, "remote_address", "?")
-    log.info("Yeni baglanti: %s", peer)
+    log.info("Yeni baglanti: %s (kanal=%s)", peer, path)
 
     try:
         async for raw in websocket:
@@ -77,7 +91,7 @@ async def handler(websocket):
             if mtype == "yayinci-merhaba":
                 role = "broadcaster"
                 state.broadcaster = websocket
-                log.info("Yayinci (Jetson) baglandi: %s", peer)
+                log.info("Yayinci (Jetson) baglandi (kanal=%s): %s", path, peer)
                 if state.viewer is not None:
                     await safe_send(state.broadcaster, {"type": "izleyici-baglandi"})
                 continue
@@ -85,7 +99,7 @@ async def handler(websocket):
             if mtype == "izleyici-merhaba":
                 role = "viewer"
                 state.viewer = websocket
-                log.info("Izleyici (konsol) baglandi: %s", peer)
+                log.info("Izleyici (konsol) baglandi (kanal=%s): %s", path, peer)
                 if state.broadcaster is not None:
                     await safe_send(state.broadcaster, {"type": "izleyici-baglandi"})
                 continue
@@ -95,24 +109,24 @@ async def handler(websocket):
                 if state.viewer is not None:
                     await safe_send(state.viewer, msg)
                 else:
-                    log.warning("Izleyici henuz bagli degil, '%s' mesaji dusuruldu", mtype)
+                    log.warning("Izleyici henuz bagli degil (kanal=%s), '%s' mesaji dusuruldu", path, mtype)
             elif role == "viewer":
                 if state.broadcaster is not None:
                     await safe_send(state.broadcaster, msg)
                 else:
-                    log.warning("Yayinci henuz bagli degil, '%s' mesaji dusuruldu", mtype)
+                    log.warning("Yayinci henuz bagli degil (kanal=%s), '%s' mesaji dusuruldu", path, mtype)
             else:
-                log.warning("Kimligini bildirmemis baglantidan mesaj geldi (%s), yok sayildi", mtype)
+                log.warning("Kimligini bildirmemis baglantidan mesaj geldi (kanal=%s, %s), yok sayildi", path, mtype)
 
     except websockets.exceptions.ConnectionClosed:
         pass
     finally:
         if role == "broadcaster" and state.broadcaster is websocket:
             state.broadcaster = None
-            log.info("Yayinci baglantisi kapandi: %s", peer)
+            log.info("Yayinci baglantisi kapandi (kanal=%s): %s", path, peer)
         elif role == "viewer" and state.viewer is websocket:
             state.viewer = None
-            log.info("Izleyici baglantisi kapandi: %s", peer)
+            log.info("Izleyici baglantisi kapandi (kanal=%s): %s", path, peer)
 
 
 async def main():
@@ -121,7 +135,7 @@ async def main():
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
 
-    log.info("Signaling sunucusu baslatiliyor: ws://%s:%d%s", args.host, args.port, SIGNAL_PATH)
+    log.info("Signaling sunucusu baslatiliyor: ws://%s:%d (yol bazli coklu kanal)", args.host, args.port)
     async with websockets.serve(handler, args.host, args.port):
         await asyncio.Future()  # sonsuza kadar calis
 

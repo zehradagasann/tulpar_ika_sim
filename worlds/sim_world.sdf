@@ -1,0 +1,326 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="sim_world">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+<render_engine>ogre2</render_engine>
+    </plugin>
+
+    <gui fullscreen="0">
+      <camera name="user_camera">
+        <pose>-18 -22 16 0.45 0 0.9</pose>
+      </camera>
+    </gui>
+
+    <light type="directional" name="sun">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="parkur">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+
+      <link name="zemin">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/zemin.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/zemin.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.3500 0.2500 0.1500 1</ambient>
+            <diffuse>0.3500 0.2500 0.1500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="bariyer">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/bariyer.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/bariyer.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.7500 0.0500 0.0500 1</ambient>
+            <diffuse>0.7500 0.0500 0.0500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="yol">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/yol.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/yol.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.3255 0.2157 0.0000 1</ambient>
+            <diffuse>0.3255 0.2157 0.0000 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="dik_egim">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/dik_egim.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/dik_egim.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.4118 0.4118 0.4118 1</ambient>
+            <diffuse>0.4118 0.4118 0.4118 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="dik_engel">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/dik_engel.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/dik_engel.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.4118 0.4118 0.4118 1</ambient>
+            <diffuse>0.4118 0.4118 0.4118 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="yan_egim">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/yan_egim.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/yan_egim.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.4118 0.4118 0.4118 1</ambient>
+            <diffuse>0.4118 0.4118 0.4118 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="tasli_cakilli_yol">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/tasli_cakilli_yol.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/tasli_cakilli_yol.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.5000 0.4800 0.4500 1</ambient>
+            <diffuse>0.5000 0.4800 0.4500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="sudan_gecis">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/sudan_gecis.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/sudan_gecis.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.6118 0.6588 0.6706 1</ambient>
+            <diffuse>0.6118 0.6588 0.6706 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="engebeli_arazi">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/engebeli_arazi.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/engebeli_arazi.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.7451 0.7451 0.7451 1</ambient>
+            <diffuse>0.7451 0.7451 0.7451 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="cizgiler">
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/cizgiler.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>1.0000 1.0000 1.0000 1</ambient>
+            <diffuse>1.0000 1.0000 1.0000 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="kukalar">
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/kukalar.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.8118 0.3098 0.0000 1</ambient>
+            <diffuse>0.8118 0.3098 0.0000 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+
+      <link name="tabelalar">
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>../meshes/parkur/tabelalar.stl</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        <material>
+            <ambient>0.8500 0.8500 0.8500 1</ambient>
+            <diffuse>0.8500 0.8500 0.8500 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

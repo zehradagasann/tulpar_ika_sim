@@ -1,0 +1,280 @@
+# Nav2 parametreleri - Tulpar IKA
+#
+# TEK DOGRULUK KAYNAGI: urdf/robot.urdf.xacro'daki gz-sim-diff-drive-system plugin'i
+# (wheel_separation, wheel_radius, max_linear_velocity, max_angular_velocity,
+# max_linear_acceleration) ve base_link collision box'i (footprint icin). Bu dosyadaki
+# hiz/ivme/footprint degerleri xacro'dan BIREBIR kopyalanmistir - xacro degisirse
+# (bugune kadar birkac kez oldugu gibi) burasi da elle senkronize edilmeli.
+#
+# TEB yerine MPPI: teb_local_planner ROS2 Jazzy icin apt'ta yok (dogrulandi), MPPI
+# (nav2_mppi_controller) apt'ta hazir ve diferansiyel-suruse (yerinde donus dahil)
+# native destek veriyor - ayri bir min-turning-radius parametresi GEREKMEZ,
+# motion_model: DiffDrive zaten yerinde donusu sagliyor.
+#
+# Harita kaynagi: launch/rtabmap.launch.py'nin canli yayinladigi /map (map_server YOK).
+
+controller_server:
+  ros__parameters:
+    use_sim_time: true
+    controller_frequency: 20.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["goal_checker"]
+    controller_plugins: ["FollowPath"]
+
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.3
+      movement_time_allowance: 10.0
+
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.15
+      stateful: true
+
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 40
+      model_dt: 0.05
+      batch_size: 1000
+      # Robotun gercek limitleri - urdf/robot.urdf.xacro DiffDrive plugin'inden
+      vx_max: 1.0
+      vx_min: -0.3
+      vy_max: 0.0
+      wz_max: 3.0
+      ax_max: 2.0
+      ax_min: -2.0
+      # Acisal ivme icin motor ekibinden henuz onayli deger yok - placeholder
+      az_max: 3.5
+      motion_model: "DiffDrive"
+      # AckermannConstraints kasitli olarak yok - o parametre grubu sadece
+      # motion_model: Ackermann iken kullaniliyor, DiffDrive icin gecersiz/gereksiz.
+      # Yerinde donus (zero-turn) motion_model: DiffDrive'dan geliyor, ekstra
+      # bir min-turning-radius kisiti YOK - plan dokumanindaki gerekce budur.
+      visualize: false
+      TrajectoryVisualizer:
+        trajectory_step: 5
+        time_step: 3
+      critics:
+        [
+          "ConstraintCritic",
+          "GoalCritic",
+          "GoalAngleCritic",
+          "PathAlignCritic",
+          "PathFollowCritic",
+          "PathAngleCritic",
+          "PreferForwardCritic",
+          "ObstaclesCritic",
+        ]
+      ConstraintCritic:
+        enabled: true
+        cost_weight: 4.0
+        cost_power: 1
+      GoalCritic:
+        enabled: true
+        cost_weight: 5.0
+        cost_power: 1
+        threshold_to_consider: 1.4
+      GoalAngleCritic:
+        enabled: true
+        cost_weight: 3.0
+        cost_power: 1
+        threshold_to_consider: 0.5
+      PathAlignCritic:
+        enabled: true
+        cost_weight: 14.0
+        cost_power: 1
+        threshold_to_consider: 0.5
+      PathFollowCritic:
+        enabled: true
+        cost_weight: 5.0
+        cost_power: 1
+        offset_from_furthest: 5
+      PathAngleCritic:
+        enabled: true
+        cost_weight: 2.0
+        cost_power: 1
+        offset_from_furthest: 4
+        threshold_to_consider: 0.5
+      PreferForwardCritic:
+        enabled: true
+        cost_weight: 1.0
+        cost_power: 1
+        threshold_to_consider: 0.5
+      ObstaclesCritic:
+        enabled: true
+        cost_weight: 20.0
+        cost_power: 1
+        consider_footprint: true
+        collision_cost: 10000.0
+        critical_weight: 20.0
+
+planner_server:
+  ros__parameters:
+    use_sim_time: true
+    expected_planner_frequency: 10.0
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      tolerance: 0.5
+      use_astar: true
+      allow_unknown: true
+
+behavior_server:
+  ros__parameters:
+    use_sim_time: true
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    behavior_plugins: ["spin", "backup", "wait"]
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+    # spin, MPPI'nin yerinde-donus (zero-turn) yetenegini dogrulamak icin ucuz bir
+    # ek kontrol noktasi olarak da kullanilabilir.
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: true
+    global_frame: map
+    robot_base_frame: base_footprint
+    odom_topic: /odom
+    # default_nav_to_pose_bt_xml belirtilmedi -> nav2_bt_navigator'in kendi stok
+    # navigate_to_pose_w_replanning_and_recovery.xml'i kullanilir. Bu Nav2'nin
+    # ICI BT'si - behavior_trees/ana_tree.xml (yaristik BT) ile karistirilmamali,
+    # ona hic dokunulmuyor.
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: true
+    smoothing_frequency: 20.0
+    scale_velocities: false
+    feedback: "OPEN_LOOP"
+    # [x, y, theta] - urdf/robot.urdf.xacro DiffDrive plugin'iyle birebir ayni
+    max_velocity: [1.0, 0.0, 3.0]
+    min_velocity: [-0.3, 0.0, -3.0]
+    max_accel: [2.0, 0.0, 3.5]
+    max_decel: [-2.0, 0.0, -3.5]
+    odom_topic: "/odom"
+    odom_duration: 0.1
+
+lifecycle_manager_navigation:
+  ros__parameters:
+    use_sim_time: true
+    autostart: true
+    # Isimler tulpar_bt/include/tulpar_bt/wait_for_system_ready.hpp'nin varsayilan
+    # node_names portuyla ("bt_navigator,controller_server,planner_server")
+    # birebir eslesiyor - degistirilirse orasi da guncellenmeli.
+    node_names:
+      [
+        "controller_server",
+        "planner_server",
+        "behavior_server",
+        "bt_navigator",
+        "velocity_smoother",
+      ]
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: true
+      global_frame: map
+      robot_base_frame: base_footprint
+      update_frequency: 2.0
+      publish_frequency: 1.0
+      resolution: 0.10
+      track_unknown_space: true
+      # 20 Temmuz 2026: footprint, mekanik ekipten (Halil) gelen Fusion 360 CAD
+      # export'undan (tulpar_description.zip, 1606 parca, poses.csv) turetildi -
+      # eski "1150x1207x615mm" mekanik el notu yukseklikte ~518mm hataliydi,
+      # gercek deger 1237x1167x1133mm (iki bagimsiz yontemle capraz dogrulandi,
+      # bkz. urdf/robot.urdf.xacro'daki collision box yorumu). Yari-genislikler:
+      # uzunluk(on-arka)/2=0.6185, genislik(sag-sol)/2=0.5835.
+      # Bu footprint degisirse tulpar_safety/collision_checker_node.py
+      # icindeki robot_radius_m de elle guncellenmeli - iki dosya arasinda
+      # otomatik senkron yok, bkz. o dosyadaki yorum.
+      footprint: "[[0.6185, 0.5835], [0.6185, -0.5835], [-0.6185, -0.5835], [-0.6185, 0.5835]]"
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_topic: /map
+        subscribe_to_updates: true
+        transform_tolerance: 0.5
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        # 18 Temmuz 2026: PoseArray (/parkur/koni_tespitleri) ObstacleLayer'a
+        # dogrudan bagl anamiyor (sadece LaserScan/PointCloud2 kabul ediyor) -
+        # tulpar_obstacle_injector artik ayni koni noktalarini PointCloud2
+        # olarak da /parkur/koni_engelleri'nde yayinliyor, "cones" kaynagi bu.
+        observation_sources: scan cones
+        scan:
+          topic: /scan
+          data_type: "LaserScan"
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          raytrace_max_range: 20.0
+          obstacle_max_range: 18.0
+        cones:
+          topic: /parkur/koni_engelleri
+          data_type: "PointCloud2"
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          raytrace_max_range: 20.0
+          obstacle_max_range: 18.0
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        inflation_radius: 0.9
+        cost_scaling_factor: 3.0
+      always_send_full_costmap: true
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: true
+      global_frame: odom
+      robot_base_frame: base_footprint
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      rolling_window: true
+      width: 6
+      height: 6
+      resolution: 0.10
+      # 20 Temmuz 2026: bkz. global_costmap'teki ayni footprint'in yanindaki not
+      # (Fusion CAD export'undan turetildi).
+      footprint: "[[0.6185, 0.5835], [0.6185, -0.5835], [-0.6185, -0.5835], [-0.6185, 0.5835]]"
+      plugins: ["obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan cones
+        scan:
+          topic: /scan
+          data_type: "LaserScan"
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          raytrace_max_range: 20.0
+          obstacle_max_range: 18.0
+        cones:
+          topic: /parkur/koni_engelleri
+          data_type: "PointCloud2"
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          raytrace_max_range: 20.0
+          obstacle_max_range: 18.0
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        inflation_radius: 0.9
+        cost_scaling_factor: 3.0
+      always_send_full_costmap: true

@@ -1,0 +1,24 @@
+{
+  "name": "yer_istasyonu",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TULPAR IKA - ROS 2 Jazzy yer istasyonu (Electron + React + rclnodejs)",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "start": "electron-vite dev",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build"
+  },
+  "dependencies": {
+    "rclnodejs": "2.1.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "5.2.0",
+    "electron": "41.7.1",
+    "electron-vite": "5.0.0",
+    "vite": "7.3.6"
+  }
+}

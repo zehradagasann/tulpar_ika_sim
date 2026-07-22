@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="3">
+
+  <name>tulpar_turret_bridge</name>
+  <version>0.1.0</version>
+
+  <description>
+    /tulpar_kamera/taret_pid + /tulpar_kamera/atis_event -> Teensy seri
+    komutlari (TP/TT/S1/S0/L1/L0). firmware/tulpar_teensy'nin Jetson
+    tarafindaki tek gercek koprusu (22 Temmuz 2026, Talha).
+  </description>
+
+  <maintainer email="talha.dag2005@gmail.com">talha</maintainer>
+
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>tulpar_ika_msgs</exec_depend>
+  <exec_depend>python3-serial</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+
+</package>

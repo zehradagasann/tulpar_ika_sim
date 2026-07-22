@@ -21,6 +21,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SlalomTarget.msg"
   "msg/AtisEvent.msg"
   "msg/TaretPid.msg"
+  "msg/SpeedDecision.msg"
+  "msg/TerrainSpeedDecision.msg"
 
   DEPENDENCIES
     std_msgs

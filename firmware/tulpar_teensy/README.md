@@ -42,7 +42,12 @@ Aynı "gerçek/mock donanım arayüzü" deseniyle donanımsız test edilebilir
 - `F<kanal 0-3> <oran 0.0-1.0>` — fren servosu (örn. `F0 0.5`)
 - `TP <derece>` / `TT <derece>` — taret pan/tilt (örn. `TP 30`), **±90° yazılımsal
   sınır otomatik kırpılır** (KTR 5.2) — sınıra çarpınca "LIMITE KIRPILDI" basar
-- `L1` / `L0` — lazer röle aç/kapat
+- `S1` / `S0` — lazeri silahlandır/silahsızlandır (güvenlik ara kilidi, 22 Temmuz 2026)
+- `L1` / `L0` — lazer röle ateşle/kapat — **`L1` sadece önceden `S1` gönderildiyse ateşler**,
+  aksi halde "SILAHSIZ" hatası basıp reddeder. Jetson/BT tarafı hedef kilidi +
+  atış bölgesi kontrolünden SONRA `S1` göndermeli, ateşten hemen sonra `S0` ile
+  tekrar silahsızlandırmalı — tek bir yanlışlıkla gönderilen `L1` başlıbaşına
+  asla ateş etmez.
 
 **Gerçek Teensy 4.1 hedefi için derleme doğrulandı** (`arduino-cli compile
 --fqbn teensy:avr:teensy41 .`, sadece kütüphane uyarıları, hata yok).

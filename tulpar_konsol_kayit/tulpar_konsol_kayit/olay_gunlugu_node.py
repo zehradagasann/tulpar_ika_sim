@@ -14,6 +14,14 @@ onerisi):
     olduguna - simulate_mode dahil - yayinlar): Emin'in onerisi uzerine
     "atis ani" ayri bir event olarak loglanir (Gun 13'teki reaksiyon suresi
     metrikleri icin, bkz. talha_yol_haritasi).
+  - /tulpar_kamera/atis_event (tulpar_ika_msgs/AtisEvent, Emin'in kamera_node'u
+    yayinlar, 22 Temmuz 2026 eklendi - eskiden /tulpar_bt/atis_event ile ayni
+    isimdi, tip cakismasi yaratiyordu, Emin tarafinda yeniden adlandirildi).
+    BT'nin kendi "atis yaptim" sinyalinden FARKLI - bu, algi tarafinin hedef
+    kilit durumu (ENTER/EXIT/LOST/LOCK_STABLE). dwell_seconds alani Gun 13'un
+    reaksiyon-suresi metrikleri icin bicilmis kaftan, ayrica hesaplamaya
+    gerek yok, oldugu gibi loglanir. RELIABLE+TRANSIENT_LOCAL (Emin'in
+    publisher'iyla uyumlu - gec abone olan da son durumu alsin diye).
 
 BEKLENEN, HENUZ GERCEK OLMAYAN VERI: Emin'in TensorRT export'u ve
 pid_target_tracking.py duzeltmesi bitene kadar /detections//sign_detected
@@ -28,10 +36,10 @@ from datetime import datetime, timezone
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 from std_msgs.msg import Header
-from tulpar_ika_msgs.msg import Detection2DArray, SignDetectionArray, SignDetection
+from tulpar_ika_msgs.msg import Detection2DArray, SignDetectionArray, SignDetection, AtisEvent
 
 CONE_TARGET_CLASSES = ('shooting_target', 'traffic_cone')
 
@@ -46,6 +54,7 @@ class OlayGunlugu(Node):
         self.declare_parameter('sign_topic', '/sign_detected')
         self.declare_parameter('detections_topic', '/detections')
         self.declare_parameter('atis_event_topic', '/tulpar_bt/atis_event')
+        self.declare_parameter('kamera_atis_event_topic', '/tulpar_kamera/atis_event')
         self.declare_parameter('heartbeat_topic', '/konsol/heartbeat')
         self.declare_parameter('sign_debounce_sec', 2.0)
         self.declare_parameter('detection_debounce_sec', 2.0)
@@ -77,10 +86,21 @@ class OlayGunlugu(Node):
                 class_name TEXT,
                 action INTEGER,
                 confidence REAL,
-                mesafe_m REAL
+                mesafe_m REAL,
+                dwell_seconds REAL,
+                track_id INTEGER
             )
             """
         )
+        # Var olan bir db dosyasinda (22 Temmuz 2026 oncesi) bu iki kolon
+        # olmayabilir - CREATE TABLE IF NOT EXISTS onlari eklemez, ALTER
+        # TABLE gerekir. SQLite'ta "ADD COLUMN IF NOT EXISTS" yok, o yuzden
+        # zaten var olma hatasi (duplicate column) yutuluyor.
+        for kolon_tanimi in ('dwell_seconds REAL', 'track_id INTEGER'):
+            try:
+                self.db.execute(f'ALTER TABLE olaylar ADD COLUMN {kolon_tanimi}')
+            except sqlite3.OperationalError:
+                pass
         self.db.commit()
 
         qos = QoSProfile(
@@ -107,6 +127,18 @@ class OlayGunlugu(Node):
             self._atis_event_callback,
             qos,
         )
+        kamera_atis_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=5,
+        )
+        self.create_subscription(
+            AtisEvent,
+            self.get_parameter('kamera_atis_event_topic').value,
+            self._kamera_atis_event_callback,
+            kamera_atis_qos,
+        )
 
         self.heartbeat_pub = self.create_publisher(
             Header, self.get_parameter('heartbeat_topic').value, qos)
@@ -124,14 +156,17 @@ class OlayGunlugu(Node):
         self.heartbeat_pub.publish(msg)
 
     def _kaydet(self, kaynak_topic, class_id=None, class_name=None,
-                action=None, confidence=None, mesafe_m=None):
+                action=None, confidence=None, mesafe_m=None,
+                dwell_seconds=None, track_id=None):
         self.db.execute(
             "INSERT INTO olaylar "
             "(zaman_damgasi, kaynak_topic, class_id, class_name, action, "
-            "confidence, mesafe_m) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "confidence, mesafe_m, dwell_seconds, track_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 datetime.now(timezone.utc).isoformat(),
                 kaynak_topic, class_id, class_name, action, confidence, mesafe_m,
+                dwell_seconds, track_id,
             ),
         )
         self.db.commit()
@@ -193,6 +228,17 @@ class OlayGunlugu(Node):
 
     def _atis_event_callback(self, msg: Header):
         self._kaydet('/tulpar_bt/atis_event', class_name='ATIS_ANI')
+
+    def _kamera_atis_event_callback(self, msg: AtisEvent):
+        self._kaydet(
+            '/tulpar_kamera/atis_event',
+            class_id=msg.class_id,
+            class_name=msg.class_name,
+            action=msg.action,
+            confidence=msg.confidence,
+            dwell_seconds=msg.dwell_seconds,
+            track_id=msg.track_id,
+        )
 
 
 def main(args=None):

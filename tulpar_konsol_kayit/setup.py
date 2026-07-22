@@ -10,7 +10,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/olay_gunlugu.launch.py']),
+        ('share/' + package_name + '/launch', [
+            'launch/olay_gunlugu.launch.py',
+            'launch/bag_kayit.launch.py',
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

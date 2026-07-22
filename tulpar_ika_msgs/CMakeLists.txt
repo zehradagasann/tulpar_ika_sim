@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SignDetectionArray.msg"
   "msg/ConeDetection.msg"
   "msg/SlalomTarget.msg"
+  "msg/AtisEvent.msg"
 
   DEPENDENCIES
     std_msgs

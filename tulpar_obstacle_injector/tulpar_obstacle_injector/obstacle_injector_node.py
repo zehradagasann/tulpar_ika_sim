@@ -76,11 +76,16 @@ class ObstacleInjector(Node):
             self._camera_info_callback,
             qos,
         )
+        detections_qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
         self.create_subscription(
             Detection2DArray,
             self.get_parameter('detections_topic').value,
             self._detections_callback,
-            qos,
+            detections_qos,
         )
         self.pose_array_pub = self.create_publisher(
             PoseArray,

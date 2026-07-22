@@ -171,16 +171,29 @@ void islemTaretKomutu(const String &satir) {
   Serial.println(kirpildi ? " derece (LIMITE KIRPILDI)" : " derece");
 }
 
-// Lazer komutu: "L1" (ac) / "L0" (kapat)
+// Lazer komutu: "L1" (ac, sadece silahliyken) / "L0" (kapat)
+// Silahlanma komutu: "S1" (silahlandir) / "S0" (silahsizlandir)
+// Jetson/BT tarafi ates etmeden once "S1" ile silahlandirmali (kendi hedef
+// kilidi/atis bolgesi kontrolunden SONRA), atesten hemen sonra "S0" ile
+// silahsizlandirmali - bkz. LazerKatmani.h basindaki interlock notu.
 void islemLazerKomutu(const String &satir) {
   if (satir == "L1") {
-    lazer.ac();
-    Serial.println("OK: lazer ACIK");
+    if (lazer.ac()) {
+      Serial.println("OK: lazer ACIK");
+    } else {
+      Serial.println("HATA: lazer SILAHSIZ - once 'S1' ile silahlandir");
+    }
   } else if (satir == "L0") {
     lazer.kapat();
     Serial.println("OK: lazer KAPALI");
+  } else if (satir == "S1") {
+    lazer.silahlandir();
+    Serial.println("OK: lazer SILAHLANDIRILDI");
+  } else if (satir == "S0") {
+    lazer.silahsizlandir();
+    Serial.println("OK: lazer SILAHSIZLANDIRILDI");
   } else {
-    Serial.println("HATA: format 'L1' (ac) veya 'L0' (kapat) olmali");
+    Serial.println("HATA: format 'L1'/'L0' (ates/kapat) veya 'S1'/'S0' (silahlandir/silahsizlandir) olmali");
   }
 }
 
@@ -191,8 +204,9 @@ void islemKomut(const String &satir) {
     case 'F': islemFrenKomutu(satir); break;
     case 'T': islemTaretKomutu(satir); break;
     case 'L': islemLazerKomutu(satir); break;
+    case 'S': islemLazerKomutu(satir); break;
     default:
-      Serial.println("HATA: bilinmeyen komut (G/F/T/L ile baslamali)");
+      Serial.println("HATA: bilinmeyen komut (G/F/T/L/S ile baslamali)");
   }
 }
 

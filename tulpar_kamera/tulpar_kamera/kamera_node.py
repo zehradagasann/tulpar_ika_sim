@@ -677,6 +677,15 @@ class KameraNode:
         align = rs.align(rs.stream.color)
         log.info("RealSense pipeline hazir, tespit dongusu basliyor")
 
+        # Derinlik akisinin sabit intrinsics'i - lens/ISP degismedigi surece
+        # karadan kareye aynidir, bir kez okuyup her karede ayni degerlerle
+        # yayinlamak yeterli. Zehra/Talha'nin obstacle_injector'i VE lidar
+        # fuzyon node'u bunu piksel->3D geri izdusumu icin zorunlu bekliyor.
+        depth_profile = rs_pipeline.get_active_profile().get_stream(rs.stream.depth).as_video_stream_profile()
+        intr = depth_profile.get_intrinsics()
+        log.info("D435if derinlik intrinsics: fx=%.2f fy=%.2f ppx=%.2f ppy=%.2f",
+                 intr.fx, intr.fy, intr.ppx, intr.ppy)
+
         merkez_x, merkez_y = TESPIT_W / 2, TESPIT_H / 2
         # Sinif adlari modelden. class_registry.yaml gelince buradan okunacak.
         sinif_adlari = getattr(model, "names", {}) or {}
@@ -772,6 +781,11 @@ class KameraNode:
                     image_size=(TESPIT_W, TESPIT_H),
                     capture_time_ns=capture_time_ns,
                     inference_ms=infer_ms,
+                )
+                self.ros.publish_camera_info(
+                    width=TESPIT_W, height=TESPIT_H,
+                    fx=intr.fx, fy=intr.fy, ppx=intr.ppx, ppy=intr.ppy,
+                    capture_time_ns=capture_time_ns,
                 )
 
                 hedef = find_shooting_target(results)

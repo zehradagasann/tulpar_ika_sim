@@ -2,9 +2,18 @@
 """
 detection_publisher.py -- Tulpar IKA perception -> ROS2 koprusu.
 
-/detections               tulpar_ika_msgs/Detection2DArray (BEST_EFFORT, depth 1)
-/tulpar_kamera/atis_event tulpar_ika_msgs/AtisEvent        (RELIABLE + TRANSIENT_LOCAL)
-/tulpar_kamera/taret_pid  tulpar_ika_msgs/TaretPid         (BEST_EFFORT, depth 1)
+/detections                 tulpar_ika_msgs/Detection2DArray (BEST_EFFORT, depth 1)
+/tulpar_kamera/atis_event   tulpar_ika_msgs/AtisEvent        (RELIABLE + TRANSIENT_LOCAL)
+/tulpar_kamera/taret_pid    tulpar_ika_msgs/TaretPid         (BEST_EFFORT, depth 1)
+/d435if/depth/camera_info   sensor_msgs/CameraInfo           (BEST_EFFORT, depth 1)
+
+CAMERA_INFO (27 Tem): gercek robotta (simulasyon disinda) bu topic hic
+yayinlanmiyordu - Zehra/Talha'nin obstacle_injector'i (ve Emin'in lidar
+fuzyon node'u) piksel->3D geri izdusumu icin bunu ZORUNLU parametre olarak
+bekliyor (varsayilan topic ismi ayni: /d435if/depth/camera_info). Gercek
+degerler RealSense'in kendi intrinsics'inden (rs.video_stream_profile.
+get_intrinsics()) okunup pipeline basinda BIR KEZ hesaplaniyor, sonra her
+karede ayni degerlerle yayinlaniyor (sabit intrinsics, ISP/lens degismiyor).
 
 MIMARI: Bu bir ROS2 node dosyasi DEGIL, tulpar_kamera_node.py process'inin
 icinde calisan modul. Argus boot basina bir kez aciliyor; ayri node ikinci
@@ -68,6 +77,7 @@ class _NullPublisher:
     ok = False
     def publish(self, *_a, **_kw): return None
     def publish_taret_pid(self, *_a, **_kw): return None
+    def publish_camera_info(self, *_a, **_kw): return None
     def shutdown(self): pass
 
 
@@ -87,6 +97,7 @@ class DetectionPublisher:
         detections_topic: str = "/detections",
         atis_topic: str = "/tulpar_kamera/atis_event",
         taret_pid_topic: str = "/tulpar_kamera/taret_pid",
+        camera_info_topic: str = "/d435if/depth/camera_info",
         shooting_zone: Tuple[float, float] = (0.25, 0.25),
         min_confidence_for_event: float = 0.55,
         lock_stable_frames: int = 15,
@@ -99,6 +110,7 @@ class DetectionPublisher:
         import rclpy
         from rclpy.qos import (DurabilityPolicy, HistoryPolicy, QoSProfile,
                                ReliabilityPolicy)
+        from sensor_msgs.msg import CameraInfo
         from tulpar_ika_msgs.msg import AtisEvent, Detection2D, Detection2DArray, TaretPid
 
         self._rclpy = rclpy
@@ -106,6 +118,7 @@ class DetectionPublisher:
         self._Detection2D = Detection2D
         self._Detection2DArray = Detection2DArray
         self._TaretPid = TaretPid
+        self._CameraInfo = CameraInfo
 
         self._frame_id = frame_id
         self._zone_w, self._zone_h = shooting_zone
@@ -140,6 +153,8 @@ class DetectionPublisher:
         self._pub_evt = self._node.create_publisher(AtisEvent, atis_topic, sticky)
         # turret_bridge_node.py'nin abonelik QoS'uyla birebir ayni (fast).
         self._pub_taret_pid = self._node.create_publisher(TaretPid, taret_pid_topic, fast)
+        self._pub_cam_info = self._node.create_publisher(CameraInfo, camera_info_topic, fast)
+        self._cam_info_frame_id = frame_id
 
         # Detection2D.source = SOURCE_YOLO. Sabit runtime'da okunur ki
         # Zehra sema degeri degistirirse burasi otomatik uyumlu kalsin.
@@ -243,6 +258,27 @@ class DetectionPublisher:
         msg.tilt_derece = float(tilt_derece)
         msg.confidence = float(confidence)
         self._pub_taret_pid.publish(msg)
+
+    def publish_camera_info(self, width: int, height: int, fx: float, fy: float,
+                            ppx: float, ppy: float,
+                            capture_time_ns: Optional[int] = None) -> None:
+        """D435if derinlik akisinin sabit intrinsics'ini yayinlar.
+
+        Distorsiyon katsayilari RealSense'in kendi factory-rectified
+        derinlik akisinda hep sifir (brown_conrady modeli ama D=[0]*5) -
+        bu yuzden plumb_bob + sifir D yeterli, ekstra donusum gerekmiyor.
+        """
+        msg = self._CameraInfo()
+        msg.header.stamp = self._stamp(capture_time_ns)
+        msg.header.frame_id = self._cam_info_frame_id
+        msg.width = int(width)
+        msg.height = int(height)
+        msg.distortion_model = "plumb_bob"
+        msg.d = [0.0, 0.0, 0.0, 0.0, 0.0]
+        msg.k = [float(fx), 0.0, float(ppx), 0.0, float(fy), float(ppy), 0.0, 0.0, 1.0]
+        msg.r = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        msg.p = [float(fx), 0.0, float(ppx), 0.0, 0.0, float(fy), float(ppy), 0.0, 0.0, 0.0, 1.0, 0.0]
+        self._pub_cam_info.publish(msg)
 
     def _in_zone(self, d: Det, image_size) -> bool:
         w, h = image_size

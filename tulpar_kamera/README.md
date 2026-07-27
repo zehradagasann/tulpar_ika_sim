@@ -83,6 +83,28 @@ ros2 run tulpar_kamera kamera_node --signaling ws://127.0.0.1:8080/yer-istasyonu
 Node once acilirsa da sorun degil: offer ve ICE adaylari saklanir, izleyici
 baglandiginda otomatik tekrar gonderilir.
 
+### Lidar fuzyon node'u (`lidar_fuzyon_node.py`)
+
+Kamera + YDLidar TG30 nokta bulutu dogrulamasi icin ONCE TF agacinin
+(robot_state_publisher) ve lidar driver'inin ayakta olmasi sart:
+
+```bash
+# 1) TF agaci + YDLidar TG30 (tulpar_description paketinden)
+ros2 launch tulpar_description bringup.launch.py
+
+# 2) Kamera node'u (yukaridaki gibi, ayni anda)
+ros2 run tulpar_kamera kamera_node --signaling ws://127.0.0.1:8080/yer-istasyonu-video
+
+# 3) Fuzyon node'u
+ros2 run tulpar_kamera lidar_fuzyon_node
+```
+
+`bringup.launch.py` calismiyorsa (TF yoksa) node crash ETMEZ - sadece
+"TF donusumu basarisiz" uyarisini throttle'layarak basar ve o karedeki
+dogrulamayi atlar. `ros2 topic echo /tulpar_kamera/fuzyon_engelleri` ile
+cikti PointCloud2'yi, log'daki 5 saniyelik "[ozet] X/Y dogrulandi"
+satirlariyla dogrulama oranini izleyebilirsiniz.
+
 ### Yer istasyonu tarafi
 
 `yer_istasyonu/.env` dosyasina Jetson'in adresi yazilmali (kod degisikligi
@@ -144,9 +166,22 @@ Kalici cozum arastirilacak (Argus baypasi + kendi debayer'imiz bir secenek).
   **Kurulum uyarisi**: `deep-sort-realtime`'i kurarken yukaridaki
   numpy/scipy/opencv-python notuna MUTLAKA uyun — kurulum sirasinda bu
   bulundu, atlanirsa `ultralytics` sessizce kirilir.
-- **D435if + RPLIDAR nokta bulutu fuzyonu**: derinlik verisiyle lidar'in
-  fuzyonlanip 3D engel/hedef dogrulamasinin yapilmasi (KTR/roadmap Gun 6-7)
-  henuz yazilmadi.
+- ~~D435if + YDLidar TG30 nokta bulutu fuzyonu~~ **TAMAMLANDI ve DONANIMDA
+  DOGRULANDI (27 Tem 2026)** — `lidar_fuzyon_node.py` (KTR/roadmap Gun 6-7).
+  RPLIDAR degil, gercek donanim YDLidar TG30 (bkz. `tulpar_description/config/
+  ydlidar_TG30.yaml`). Bagimsiz bir ROS2 node: `/detections` + `/d435if/depth/
+  camera_info` (piksel->3D pinhole geri izdusumu) + `/scan`'i dinler, tf2 ile
+  kamera noktasini `laser_frame`'e tasiyip LaserScan'in ayni bearing'indeki
+  okumayla karsilastirir (varsayilan tolerans 0.35m); SADECE iki sensorun de
+  ANLASTIGI noktalari `target_frame` (varsayilan odom) icinde PointCloud2
+  olarak `/tulpar_kamera/fuzyon_engelleri`'e yayinlar - bilerek bir dogrulama
+  FILTRESI, kamera-only tespitlerin yerini almaz (onlar zaten obstacle_injector
+  uzerinden geciyor). Gercek robot_state_publisher (bringup.launch.py) + gercek
+  YDLidar TG30 + gercek D435if ile uctan uca test edildi: 5 saniyelik pencerede
+  29 tespitten 6'si lidar tarafindan bagimsiz dogrulandi.
+  **Not**: kamera_node.py artik `/d435if/depth/camera_info` de yayinliyor
+  (asagida) - bu olmadan ne bu node ne de obstacle_injector gercek robotta
+  calisabilir, daha once hic yayinlanmiyordu.
 - **Renk kaymasi:** ISP ciktisinda magenta ton var. Ham bayer analizi
   (`tools/ham_bayer_analiz.py`) sensor ve optigin SAGLAM oldugunu gosterdi
   (yesil kanal normal, R/G=0.43 B/G=0.47 — ham veri icin beklenen tablo).

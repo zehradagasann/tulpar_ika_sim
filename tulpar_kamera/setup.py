@@ -19,6 +19,7 @@ setup(
     entry_points={
         'console_scripts': [
             'kamera_node = tulpar_kamera.kamera_node:main',
+            'arka_kamera_node = tulpar_kamera.arka_kamera_node:main',
             'signaling_server = tulpar_kamera.signaling_server:cli',
         ],
     },

@@ -1,0 +1,25 @@
+# Tulpar IKA - arka kamera (Sjcam SJ4000) USB capture card port sabitleme.
+#
+# Donanim: MacroSilicon HDMI->UVC capture card (idVendor=534d, idProduct=2109),
+# arka_kamera_node.py'nin ac(ti)gi kaynak. Sorun: Jetson coklu USB kamera
+# (D435if + bu capture card) taktiginda /dev/videoN numarasi baglanti sirasina
+# gore degisebiliyor - arka_kamera_node.py'nin sabit "/dev/video0" varsayimi
+# reboot/replug sonrasi baska bir kamerayi (ya da hicbirini) acabilir.
+#
+# Bu kural, capture card'i her zaman /dev/tulpar_arka_kamera sembolik
+# baglantisina baglar; arka_kamera_node.py varsayilan olarak bunu kullanir.
+#
+# Bazi USB capture card'lar birden fazla video4linux dugumu uretir (biri
+# gercek video capture, digeri metadata) - ID_V4L_CAPABILITIES icinde
+# "capture" olup olmadigini kontrol ederek sadece gercek capture arayuzunu
+# esliyoruz (udev'in "v4l_id" builtin'i bunu otomatik doldurur).
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="534d", ATTRS{idProduct}=="2109", ENV{ID_V4L_CAPABILITIES}==":capture:", SYMLINK+="tulpar_arka_kamera"
+
+# Kurulum (Jetson'da, bir kez):
+#   sudo cp udev/99-tulpar-arka-kamera.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+#   Dogrulama: capture card'i tak, `ls -l /dev/tulpar_arka_kamera` gercek
+#   /dev/videoN'e isaret etmeli. idVendor/idProduct baska cikarsa
+#   (`udevadm info -a -n /dev/video0 | grep -E "idVendor|idProduct"` ile
+#   kontrol et) bu dosyadaki degerleri guncelle.

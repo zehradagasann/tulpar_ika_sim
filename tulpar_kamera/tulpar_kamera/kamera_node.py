@@ -22,6 +22,7 @@ gorev boyunca acik kalir. MIMARI (22 Tem itibariyle iki bagimsiz kamera):
     RealSense D435if (pyrealsense2, 1280x720@30, ayri thread)
         |
         +-- renk karesi -> YOLO -> find_shooting_target -> PID (pan/tilt)
+        |                       -> DeepSort (Kalman+MobileNetv2 embedder) -> track_id
         +-- hizalanmis derinlik karesi -> bbox merkezinde derinlik -> Det.depth_m
         +-- ROS2 /detections + /tulpar_kamera/atis_event (DetectionPublisher)
 
@@ -649,8 +650,16 @@ class KameraNode:
         log.info("Model yukleniyor: %s", MODEL_PATH)
         from ultralytics import YOLO  # agir import - sadece gerekince
         import pyrealsense2 as rs  # agir/donanima bagimli - sadece gerekince
+        from deep_sort_realtime.deepsort_tracker import DeepSort  # agir - sadece gerekince
 
         model = YOLO(MODEL_PATH, task="detect")
+        # Kalman (hareket tahmini) + Mahalanobis/gorunum (MobileNetv2 embedder)
+        # tabanli takip - KTR 3.3.2 taahhudu. track_id burada uretilip Det'e
+        # yaziliyor; PID (find_shooting_target) HALA ham YOLO kutularini
+        # kullaniyor - atis kilitlenmesi takip gecikmesine bagli olmasin diye
+        # bilerek ayri tutuldu, sadece /detections yayini (Zehra'nin
+        # obstacle_injector'i + Nav2 costmap) track_id'den faydalanir.
+        tracker = DeepSort(max_age=30, n_init=3)
         log.info("Model hazir, RealSense pipeline baslatiliyor")
 
         rs_pipeline = rs.pipeline()
@@ -708,21 +717,50 @@ class KameraNode:
                 results = model.predict(source=frame, verbose=False)[0]
                 infer_ms = (time.perf_counter() - t_infer) * 1000.0
 
-                # --- ROS2 /detections: TUM tespitler ---
+                # --- ROS2 /detections: TUM tespitler + DeepSORT track_id ---
                 # PID sadece SHOOTING_TARGET_CLASS_ID ile ilgileniyor, ama
                 # Zehra'nin costmap'i ve Talha'nin konsolu her sinifi istiyor.
+                #
+                # DeepSort'a HAM YOLO kutulari (ltwh + conf + class) veriliyor,
+                # frame de gorunum (embedding) cikarimi icin lazim. Donen
+                # tracks: onceki karelerle Kalman+Mahalanobis/embedding
+                # eslestirmesiyle kimlik korunmus nesneler.
+                ds_girdi = [
+                    (
+                        [float(v) for v in (
+                            box.xyxy[0][0], box.xyxy[0][1],
+                            box.xyxy[0][2] - box.xyxy[0][0],
+                            box.xyxy[0][3] - box.xyxy[0][1],
+                        )],
+                        float(box.conf[0]),
+                        int(box.cls[0]),
+                    )
+                    for box in results.boxes
+                ]
+                tracks = tracker.update_tracks(ds_girdi, frame=frame)
+
                 dets = []
-                for box in results.boxes:
-                    cls_id = int(box.cls[0])
-                    x1, y1, x2, y2 = (float(v) for v in box.xyxy[0].cpu().numpy())
+                for tr in tracks:
+                    # is_confirmed(): en az n_init karede gorulmus, gurultu/
+                    # tek-karelik yanlis pozitif degil. time_since_update>0:
+                    # bu karede gercek bir YOLO kutusuyla eslesmedi, sadece
+                    # Kalman tahmini - hem depth_m hem class artik guvenilmez
+                    # olabileceginden bu kareyi atliyoruz (publish() zaten
+                    # tespit yoksa ACTION_TARGET_LOST/EXIT_ZONE mantigini
+                    # kendi ayri "detections bos" yoluyla isliyor).
+                    if not tr.is_confirmed() or tr.time_since_update > 0:
+                        continue
+                    x1, y1, x2, y2 = (float(v) for v in tr.to_ltrb())
                     cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
                     derinlik_m, derinlik_ok = _derinlik_olc(depth_frame, cx, cy)
+                    cls_id = int(tr.get_det_class())
                     dets.append(
                         Det(
                             class_id=cls_id,
                             class_name=str(sinif_adlari.get(cls_id, cls_id)),
-                            confidence=float(box.conf[0]),
+                            confidence=float(tr.get_det_conf() or 0.0),
                             x1=x1, y1=y1, x2=x2, y2=y2,
+                            track_id=int(tr.track_id),
                             depth_m=derinlik_m,
                             depth_valid=derinlik_ok,
                         )

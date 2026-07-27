@@ -3,7 +3,11 @@
 Tulpar IKA - Arka kamera (Sjcam SJ4000) WebRTC yayin node'u.
 
 Sjcam'in HDMI cikisi bir USB capture card (MacroSilicon 534d:2109, UVC
-MJPEG, /dev/video0) uzerinden Jetson'a bagli. Bu node SADECE video
+MJPEG) uzerinden Jetson'a bagli. Port sabitleme: udev/99-tulpar-arka-kamera.rules
+bu karti /dev/tulpar_arka_kamera sembolik baglantisina baglar (bkz. o
+dosyadaki kurulum notu) - coklu USB kamera varken /dev/videoN numarasi
+baglanti sirasina gore kayabildigi icin ham /dev/videoN'e guvenilmiyor.
+Bu node SADECE video
 yayinlar - YOLO/PID/ROS yok; yol haritasinda arka kamera sadece
 operatorun geri gorus alani icin (KTR 3.3.1), tespit gerekmiyor.
 
@@ -25,7 +29,11 @@ gore REAR_BITRATE_KBPS ayarlanabilir ama toplamin (Pi HQ + bu) 7.5 Mbps'i
 asmamasina dikkat edilmeli.
 
 KULLANIM:
+    ros2 run tulpar_kamera arka_kamera_node --signaling ws://127.0.0.1:8080/yer-istasyonu-arka-kamera
+    # ya da dogrudan:
     python3 arka_kamera_node.py --signaling ws://127.0.0.1:8080/yer-istasyonu-arka-kamera
+    # udev kurali kurulu degilse gecici olarak:
+    python3 arka_kamera_node.py --signaling ws://... --device /dev/video0
 """
 import argparse
 import asyncio
@@ -46,7 +54,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [arka-kamera] %(mess
 log = logging.getLogger("arka-kamera")
 
 # ---------------- AYARLAR ----------------
-CAPTURE_DEVICE = "/dev/video0"
+# udev/99-tulpar-arka-kamera.rules kurulu degilse bu yol yok olur ve node
+# net bir hatayla acilamaz (bkz. _build_pipeline sonrasi ana akistaki
+# RuntimeError) - sessizce yanlis /dev/videoN'i acmaktansa acikca patlamasi
+# tercih edildi. --device ile gerekirse gecici olarak override edilebilir.
+CAPTURE_DEVICE = "/dev/tulpar_arka_kamera"
 REAR_W, REAR_H, REAR_FPS = 640, 480, 30
 REAR_BITRATE_KBPS = 1200
 STUN_SERVER = "stun://stun.l.google.com:19302"
@@ -65,9 +77,10 @@ PIPELINE_DESC = (
 
 
 class ArkaKameraNode:
-    def __init__(self, signaling_url, loop):
+    def __init__(self, signaling_url, loop, device=CAPTURE_DEVICE):
         self.signaling_url = signaling_url
         self.loop = loop
+        self.device = device
         self.ws = None
 
         # Yayinci genelde konsoldan once ayaga kalkar; bkz. kamera_node.py'deki
@@ -84,7 +97,7 @@ class ArkaKameraNode:
 
     def _build_pipeline(self):
         desc = PIPELINE_DESC.format(
-            device=CAPTURE_DEVICE, w=REAR_W, h=REAR_H, fps=REAR_FPS,
+            device=self.device, w=REAR_W, h=REAR_H, fps=REAR_FPS,
             bitrate=REAR_BITRATE_KBPS * 1000,
         )
         log.info("Kaynak pipeline:\n%s", desc)
@@ -289,6 +302,9 @@ async def signaling_loop(node, signaling_url):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--signaling", required=True, help="ws://<ip>:8080/yer-istasyonu-arka-kamera")
+    parser.add_argument("--device", default=CAPTURE_DEVICE,
+                        help=f"V4L2 aygiti (varsayilan: {CAPTURE_DEVICE}, udev/99-tulpar-arka-kamera.rules "
+                             "kurulumuyla gelir). Kural kurulu degilse gecici olarak /dev/videoN verilebilir.")
     args = parser.parse_args()
 
     glib_loop = GLib.MainLoop()
@@ -297,7 +313,7 @@ def main():
     asyncio_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(asyncio_loop)
 
-    node = ArkaKameraNode(args.signaling, asyncio_loop)
+    node = ArkaKameraNode(args.signaling, asyncio_loop, device=args.device)
     node.start()
 
     try:

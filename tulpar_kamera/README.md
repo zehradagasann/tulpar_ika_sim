@@ -19,6 +19,40 @@ sudo apt install -y gstreamer1.0-nice v4l-utils
 pip3 install websockets --break-system-packages
 ```
 
+**DeepSORT (`deep-sort-realtime`) kurulumu — DIKKAT, kor kore `pip3 install
+deep-sort-realtime --break-system-packages` calistirmayin:**
+paket varsayilan olarak numpy'i 1.26.4'ten 2.x'e yukseltiyor ve ayri bir
+`opencv-python` (pip) paketi getiriyor — bu ikisi birlikte `ultralytics`'i
+(matplotlib uzerinden, numpy 1.x'e derlenmis bir uzanti importunda) KIRIYOR
+ve Jetson'in CUDA/GStreamer destekli sistem `cv2`'sini golgeliyor (27 Tem
+2026'da canli test sirasinda bulundu, `ultralytics` import hatasi verdi).
+Doğru sıra:
+
+```bash
+pip3 install deep-sort-realtime --break-system-packages
+pip3 install 'numpy<2' 'scipy==1.11.4' --break-system-packages   # deep-sort-realtime'in yukselttigi surumleri geri al
+pip3 uninstall -y opencv-python --break-system-packages          # sistem cv2'sini (JetPack/CUDA) golgelemesin
+```
+
+Kurulumdan sonra dogrulama (hepsi hatasiz import etmeli):
+```bash
+python3 -c "from ultralytics import YOLO; import pyrealsense2, cv2; from deep_sort_realtime.deepsort_tracker import DeepSort; print(cv2.__file__)"
+# cv2.__file__ /usr/lib/... altinda olmali (pip .local/site-packages'ta DEGIL)
+```
+
+**Arka kamera port sabitleme (bir kez):** arka kamera (Sjcam) USB capture
+card'i ham `/dev/videoN` yerine kararli bir isimle acilsin diye udev kurali
+kurulmali - kurulmazsa birden fazla USB kamera varken numaralandirma
+baglanti sirasina gore kayabilir ve node yanlis/olmayan bir aygiti acmaya
+calisir:
+
+```bash
+sudo cp udev/99-tulpar-arka-kamera.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+ls -l /dev/tulpar_arka_kamera   # gercek /dev/videoN'e isaret etmeli
+```
+
 `gstreamer1.0-nice` **zorunlu**. Eksikse `webrtcbin` yuklenir ama sink pad
 uretemez ve node "request pad alinamadi" diye hata verir; log'da
 `libnice elements are not available` gorunur.
@@ -90,9 +124,29 @@ Kalici cozum arastirilacak (Argus baypasi + kendi debayer'imiz bir secenek).
 
 ## ACIK ISLER
 
-- **ROS2 yayini:** tespit sonuclari su an stdout'a basiliyor. `/detections` ve
-  `/tulpar_bt/atis_event` topic'lerine baglanmasi lazim (Talha ile field yapisi
-  netlestirilecek — X/Y/Z var mi).
+- ~~ROS2 yayini~~ **TAMAMLANDI** — `/detections` (`Detection2DArray`, Zehra'nin
+  semasi) ve `/tulpar_kamera/atis_event` yayinlaniyor (bkz. `detection_publisher.py`).
+- ~~RealSense D435if kolu~~ **TAMAMLANDI** — kablo geldi, D435if artik asil
+  tespit kamerasi (renk+derinlik, `tespit_dongusu`), Pi HQ sadece atis yayini.
+- ~~Kamera port sabitleme (udev)~~ **TAMAMLANDI** — `udev/99-tulpar-arka-kamera.rules`,
+  bkz. yukaridaki Kurulum bolumu. D435if/Pi HQ'nun udev'e ihtiyaci yok (RealSense
+  kendi USB enumerasyonunu kullaniyor, Pi HQ sabit CSI baglantisi).
+- ~~DeepSORT nesne takibi~~ **TAMAMLANDI ve DONANIMDA DOGRULANDI (27 Tem 2026)**
+  — `tespit_dongusu` artik YOLO kutularini `DeepSort` (Kalman + MobileNetv2
+  embedder, KTR 3.3.2) ile takip ediyor; `/detections`'taki
+  `track_id`/`track_id_valid` artik gercek (sadece `is_confirmed()` VE o
+  karede gercek tespitle eslesmis track'ler yayinlanir). PID/atis mantigi
+  (`find_shooting_target`) BILEREK ham YOLO kutularini kullanmaya devam
+  ediyor — takip gecikmesi atis kilitlenmesini yavaslatmasin diye. Jetson'da
+  gercek D435if + TensorRT engine ile uctan uca test edildi: iki
+  `shooting_target` tespiti 14 saniye boyunca `track_id=1`/`track_id=2`
+  olarak hic degismeden (ID switch yok) takip edildi.
+  **Kurulum uyarisi**: `deep-sort-realtime`'i kurarken yukaridaki
+  numpy/scipy/opencv-python notuna MUTLAKA uyun — kurulum sirasinda bu
+  bulundu, atlanirsa `ultralytics` sessizce kirilir.
+- **D435if + RPLIDAR nokta bulutu fuzyonu**: derinlik verisiyle lidar'in
+  fuzyonlanip 3D engel/hedef dogrulamasinin yapilmasi (KTR/roadmap Gun 6-7)
+  henuz yazilmadi.
 - **Renk kaymasi:** ISP ciktisinda magenta ton var. Ham bayer analizi
   (`tools/ham_bayer_analiz.py`) sensor ve optigin SAGLAM oldugunu gosterdi
   (yesil kanal normal, R/G=0.43 B/G=0.47 — ham veri icin beklenen tablo).
@@ -102,8 +156,9 @@ Kalici cozum arastirilacak (Argus baypasi + kendi debayer'imiz bir secenek).
 - **Odak:** Pi HQ + 16 mm telefoto lens manuel odakli ve su an belirgin sekilde
   odak disi. Hedef tespiti icin ayarlanmali.
 - **Uctan uca gecikme** olculmedi. Bant genisligi dogrulandi (5.76 Mbps).
-- **RealSense D435if** kolu eklenecek (kablo bekleniyor). `--source realsense`
-  altyapisi hazir.
+- **Taret ±90° yazilimsal sinir + endstop**: Talha'nin firmware'i
+  (`TaretEksenKatmani`) derece_basina_adim/limit_derece degerlerini bekliyor —
+  elektronik ekipten deger gelince Talha'ya iletilecek.
 
 ## tools/
 

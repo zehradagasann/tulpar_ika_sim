@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Tulpar - WebRTC Alici Test</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #14161a; color: #e6e8eb; margin: 0; padding: 20px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .alt { color: #9aa3ad; font-size: 13px; margin-bottom: 16px; }
+  .satir { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  video { background: #000; width: 960px; max-width: 100%; border-radius: 6px; }
+  .panel { min-width: 280px; background: #1c1f25; border-radius: 6px; padding: 14px 16px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #9aa3ad; margin: 0 0 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td { padding: 3px 0; }
+  td.k { color: #9aa3ad; padding-right: 14px; }
+  td.v { text-align: right; font-variant-numeric: tabular-nums; }
+  #durum { padding: 6px 10px; border-radius: 4px; font-size: 13px; display: inline-block; margin-bottom: 12px; }
+  .bekliyor { background: #4a3b1a; color: #f0c674; }
+  .bagli { background: #1e3a24; color: #8fd694; }
+  .hata { background: #4a1e1e; color: #f08a8a; }
+  #log { font-family: ui-monospace, monospace; font-size: 12px; background: #12141a; border-radius: 4px;
+         padding: 10px; height: 220px; overflow-y: auto; white-space: pre-wrap; color: #b7bec7; }
+  input { background: #12141a; border: 1px solid #2c313a; color: #e6e8eb; padding: 6px 8px;
+          border-radius: 4px; width: 100%; font-size: 13px; margin-bottom: 10px; }
+  button { background: #2f6fd0; border: 0; color: #fff; padding: 7px 14px; border-radius: 4px;
+           cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>Tulpar IKA — WebRTC Alici Test Sayfasi</h1>
+<div class="alt">
+  Talha'nin VideoAlici.jsx bileseniyle ayni signaling protokolunu konusur.
+  Amaci Jetson gonderici tarafini Electron/ROS2 kurmadan dogrulamak.
+</div>
+
+<div id="durum" class="bekliyor">Baglanti bekleniyor...</div>
+
+<div class="satir">
+  <div>
+    <video id="video" autoplay playsinline muted controls></video>
+  </div>
+  <div>
+    <div class="panel" style="margin-bottom:14px">
+      <h2>Baglanti</h2>
+      <input id="url" value="ws://192.168.55.1:8080/yer-istasyonu-video">
+      <button id="baglanBtn">Yeniden Baglan</button>
+    </div>
+    <div class="panel" style="margin-bottom:14px">
+      <h2>Akis Istatistikleri</h2>
+      <table>
+        <tr><td class="k">Cozunurluk</td><td class="v" id="s-res">-</td></tr>
+        <tr><td class="k">FPS</td><td class="v" id="s-fps">-</td></tr>
+        <tr><td class="k">Bit hizi</td><td class="v" id="s-bitrate">-</td></tr>
+        <tr><td class="k">Jitter</td><td class="v" id="s-jitter">-</td></tr>
+        <tr><td class="k">Kayip paket</td><td class="v" id="s-loss">-</td></tr>
+        <tr><td class="k">Alinan kare</td><td class="v" id="s-frames">-</td></tr>
+        <tr><td class="k">ICE durumu</td><td class="v" id="s-ice">-</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let pc = null, ws = null, statsTimer = null;
+let sonBytes = 0, sonZaman = 0;
+
+function log(mesaj) {
+  const t = new Date().toLocaleTimeString('tr-TR');
+  $('log').textContent += `[${t}] ${mesaj}\n`;
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+function durum(metin, sinif) {
+  $('durum').textContent = metin;
+  $('durum').className = sinif;
+}
+
+function temizle() {
+  if (statsTimer) { clearInterval(statsTimer); statsTimer = null; }
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  if (pc) { pc.close(); pc = null; }
+  sonBytes = 0; sonZaman = 0;
+}
+
+function baglan() {
+  temizle();
+  const url = $('url').value.trim();
+  durum('Sinyal sunucusuna baglaniliyor...', 'bekliyor');
+  log(`Baglaniliyor: ${url}`);
+
+  pc = new RTCPeerConnection();
+
+  pc.ontrack = (event) => {
+    log('Video track alindi');
+    $('video').srcObject = event.streams[0];
+    durum('Video baglantisi kuruldu', 'bagli');
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    $('s-ice').textContent = pc.iceConnectionState;
+    log(`ICE durumu: ${pc.iceConnectionState}`);
+    if (['failed', 'disconnected'].includes(pc.iceConnectionState)) {
+      durum('ICE baglantisi koptu', 'hata');
+    }
+  };
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ice-candidate', candidate: event.candidate }));
+    }
+  };
+
+  try {
+    ws = new WebSocket(url);
+  } catch (err) {
+    durum('WebSocket acilamadi', 'hata');
+    log(`HATA: ${err.message}`);
+    return;
+  }
+
+  ws.onopen = () => {
+    log('Sinyal sunucusuna baglanildi, izleyici-merhaba gonderiliyor');
+    durum('Sinyal sunucusuna baglanildi, video bekleniyor...', 'bekliyor');
+    ws.send(JSON.stringify({ type: 'izleyici-merhaba' }));
+  };
+
+  ws.onmessage = async (event) => {
+    let gelen;
+    try { gelen = JSON.parse(event.data); } catch { return; }
+
+    if (gelen.type === 'offer') {
+      log('Offer alindi, answer olusturuluyor');
+      await pc.setRemoteDescription(new RTCSessionDescription(gelen));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      ws.send(JSON.stringify({ type: 'answer', sdp: answer.sdp }));
+      log('Answer gonderildi');
+      istatistikleriBaslat();
+    } else if (gelen.type === 'ice-candidate' && gelen.candidate) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(gelen.candidate));
+      } catch (err) {
+        log(`ICE adayi eklenemedi: ${err.message}`);
+      }
+    }
+  };
+
+  ws.onerror = () => log('WebSocket hatasi');
+  ws.onclose = () => { log('WebSocket kapandi'); durum('Baglanti kapandi', 'hata'); };
+}
+
+function istatistikleriBaslat() {
+  if (statsTimer) return;
+  statsTimer = setInterval(async () => {
+    if (!pc) return;
+    const raporlar = await pc.getStats();
+    raporlar.forEach((r) => {
+      if (r.type === 'inbound-rtp' && r.kind === 'video') {
+        $('s-frames').textContent = r.framesDecoded ?? '-';
+        $('s-fps').textContent = r.framesPerSecond != null ? r.framesPerSecond.toFixed(1) : '-';
+        $('s-jitter').textContent = r.jitter != null ? (r.jitter * 1000).toFixed(1) + ' ms' : '-';
+        $('s-loss').textContent = r.packetsLost ?? '-';
+        if (r.frameWidth) $('s-res').textContent = `${r.frameWidth}x${r.frameHeight}`;
+
+        const simdi = performance.now();
+        if (sonZaman) {
+          const mbps = ((r.bytesReceived - sonBytes) * 8) / ((simdi - sonZaman) / 1000) / 1e6;
+          $('s-bitrate').textContent = mbps.toFixed(2) + ' Mbps';
+        }
+        sonBytes = r.bytesReceived;
+        sonZaman = simdi;
+      }
+    });
+  }, 1000);
+}
+
+$('baglanBtn').addEventListener('click', baglan);
+baglan();
+</script>
+
+</body>
+</html>
